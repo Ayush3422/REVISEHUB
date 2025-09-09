@@ -1,0 +1,5 @@
+{
+  "name": "ReviseHub",
+  "description": "ReviseHub is an AI-powered assistant to review code from GitHub repositories for college projects, providing suggestions on style, bugs, and optimizations, along with a collaborative feedback platform and progress tracking dashboard.",
+  "requestFramePermissions": []
+}
