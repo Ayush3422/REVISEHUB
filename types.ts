@@ -1,4 +1,3 @@
-
 export interface Repo {
   url: string;
   name: string;
@@ -68,4 +67,10 @@ export interface TreeNode {
   type: 'file' | 'folder';
   path: string;
   children?: TreeNode[];
+}
+
+// Add this new interface for chat messages
+export interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
 }

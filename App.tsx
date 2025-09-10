@@ -1,12 +1,14 @@
-
 import React, { useState } from 'react';
-import type { Repo, PullRequest } from './types';
+import type { Repo, PullRequest, TreeNode } from './types'; // Add TreeNode
 import { RepoInputView } from './components/RepoInputView';
 import { PullRequestView } from './components/PullRequestView';
 import { CodeReviewView } from './components/CodeReviewView';
 import { DashboardView } from './components/DashboardView';
 import { AnalysisView } from './components/AnalysisView';
 import { FileExplorerView } from './components/FileExplorerView';
+import { ChatButton } from './components/ChatButton';
+import { ChatModal } from './components/ChatModal';
+import { getFileTree } from './services/githubService'; // Import getFileTree
 
 import { LogoIcon } from './components/icons/LogoIcon';
 import { CodeIcon } from './components/icons/CodeIcon';
@@ -22,20 +24,35 @@ const App: React.FC = () => {
   const [selectedPullRequest, setSelectedPullRequest] = useState<PullRequest | null>(null);
   const [currentView, setCurrentView] = useState<View>('pr-list');
   const [isLoading, setIsLoading] = useState(false);
+  const [repoError, setRepoError] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [fileTree, setFileTree] = useState<TreeNode[]>([]); // State for the file tree
 
-  const handleRepoSubmit = (submittedRepo: Repo) => {
+  const handleRepoSubmit = async (submittedRepo: Repo) => {
     setIsLoading(true);
-    // Simulate some validation or initial fetch
-    setTimeout(() => {
+    setRepoError(null);
+    try {
+      // Fetch the file tree as soon as the repo is submitted
+      const tree = await getFileTree(submittedRepo.url);
+      setFileTree(tree);
       setRepo(submittedRepo);
       setCurrentView('pr-list');
+    } catch (error: any) {
+      console.error("Failed to load initial repo data:", error);
+      setRepoError(
+        error?.message?.includes('404')
+          ? 'Repository not found or is private. Please check the URL or repository visibility.'
+          : 'Failed to load repository data. Please try again.'
+      );
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
   
   const handleReset = () => {
     setRepo(null);
     setSelectedPullRequest(null);
+    setFileTree([]); // Reset file tree
   };
 
   const handleSelectPullRequest = (pr: PullRequest) => {
@@ -50,7 +67,7 @@ const App: React.FC = () => {
 
   const renderCurrentView = () => {
     if (!repo) {
-      return <RepoInputView onRepoSubmit={handleRepoSubmit} isLoading={isLoading} />;
+      return <RepoInputView onRepoSubmit={handleRepoSubmit} isLoading={isLoading} error={repoError} />;
     }
 
     switch (currentView) {
@@ -60,13 +77,14 @@ const App: React.FC = () => {
         if (selectedPullRequest) {
           return <CodeReviewView repo={repo} pullRequest={selectedPullRequest} onBack={handleBackToPRList} />;
         }
-        return null; // Should not happen
+        return null;
       case 'dashboard':
         return <DashboardView repo={repo} />;
       case 'analysis':
         return <AnalysisView repo={repo} />;
       case 'files':
-        return <FileExplorerView repo={repo} />;
+        // Pass the already fetched tree to the FileExplorerView
+        return <FileExplorerView repo={repo} initialTree={fileTree} />;
       default:
         return <PullRequestView repo={repo} onSelectPullRequest={handleSelectPullRequest} />;
     }
@@ -115,6 +133,19 @@ const App: React.FC = () => {
       <main className={`flex-1 p-8 overflow-auto ${!repo ? 'flex' : ''}`}>
         {renderCurrentView()}
       </main>
+      
+      {repo && (
+        <>
+          <ChatButton onClick={() => setIsChatOpen(true)} />
+          {/* Pass repo and fileTree to the modal */}
+          <ChatModal 
+            isOpen={isChatOpen} 
+            onClose={() => setIsChatOpen(false)} 
+            repo={repo} 
+            tree={fileTree} 
+          />
+        </>
+      )}
     </div>
   );
 };

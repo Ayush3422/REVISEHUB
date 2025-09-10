@@ -1,9 +1,46 @@
 import { GoogleGenAI } from "@google/genai";
-import type { CodeSuggestion } from '../types';
+import type { CodeSuggestion, TreeNode } from '../types';
 import { SuggestionCategory, SuggestionSeverity } from "../types";
 
-// Correctly initialize GoogleGenAI with the API key from the environment variable
+// Correctly initialize the library with the API key from your .env.local file
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+// This function generates chat responses
+export async function generateChatResponse(fileTree: TreeNode[], userQuery: string): Promise<string> {
+  const stringifyTree = (nodes: TreeNode[], indent = ''): string => {
+    return nodes.map(node => {
+      const name = indent + node.name;
+      if (node.type === 'folder' && node.children) {
+        return name + '/\n' + stringifyTree(node.children, indent + '  ');
+      }
+      return name;
+    }).join('\n');
+  };
+
+  const repoContext = stringifyTree(fileTree);
+
+  const prompt = `You are an AI assistant for a code review application. Your task is to answer questions about a GitHub repository.
+
+  Here is the file structure of the repository:
+  \`\`\`
+  ${repoContext}
+  \`\`\`
+
+  Based on this file structure, please answer the following user question. Be concise and helpful.
+
+  User Question: "${userQuery}"`;
+
+  try {
+    const result = await genAI.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
+    });
+    return result.candidates[0]?.content?.parts?.[0]?.text || "";
+  } catch (error) {
+    console.error("Error generating chat response:", error);
+    return "Sorry, I encountered an error trying to generate a response.";
+  }
+}
 
 const codeReviewPrompt = `
 You are an expert senior software engineer performing a code review.
@@ -21,7 +58,6 @@ Return your response as a JSON array of suggestions.
 
 export async function reviewCode(diff: string): Promise<CodeSuggestion[]> {
   try {
-    // Generate content using the new SDK method
     const result = await genAI.models.generateContent({
       model: "gemini-1.5-flash",
       contents: `${codeReviewPrompt}\n\nCode Diff:\n\`\`\`diff\n${diff}\n\`\`\``,
@@ -30,12 +66,11 @@ export async function reviewCode(diff: string): Promise<CodeSuggestion[]> {
         temperature: 0.2,
       }
     });
-  const jsonStr = result.candidates[0]?.content?.parts?.[0]?.text || '';
-  // Parse the JSON string into an array of CodeSuggestion objects
-  const suggestions: CodeSuggestion[] = JSON.parse(jsonStr);
-  return suggestions;
+    const jsonStr = result.candidates[0]?.content?.parts?.[0]?.text || "";
+    const suggestions: CodeSuggestion[] = JSON.parse(jsonStr);
+    return suggestions;
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
+    console.error("DETAILED GEMINI API ERROR (Code Review):", error);
     if (error instanceof Error) {
         throw new Error(`Gemini API Error: ${error.message}`);
     }
@@ -71,12 +106,12 @@ export async function analyzeProject(
         temperature: 0.5,
       },
     });
-  return result.candidates[0]?.content?.parts?.[0]?.text || '';
-    } catch (error) {
-        console.error("Error calling Gemini API for project analysis:", error);
-        if (error instanceof Error) {
-            throw new Error(`Gemini API Error: ${error.message}`);
-        }
-        throw new Error('An unknown error occurred during project analysis.');
+    return result.candidates[0]?.content?.parts?.[0]?.text || "";
+  } catch (error) {
+    console.error("DETAILED GEMINI API ERROR (Project Analysis):", error);
+    if (error instanceof Error) {
+      throw new Error(`Gemini API Error: ${error.message}`);
     }
+    throw new Error('An unknown error occurred during project analysis.');
+  }
 }

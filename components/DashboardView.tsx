@@ -84,51 +84,74 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ repo }) => {
     }
 
     const sortedContributors = [...data.contributors].sort((a, b) => b.commits - a.commits);
-    
+
+    // Example mock data for new charts (replace with real data as needed)
+    const netCodeChange = data.codeChurn.map(week => ({
+        name: week.name,
+        net: (week.additions || 0) - (week.deletions || 0)
+    }));
+    // Demo data for visible movement
+    const demoMovement = [
+        { name: 'Week 1', value: Math.floor(Math.random() * 10) + 1 },
+        { name: 'Week 2', value: Math.floor(Math.random() * 10) + 5 },
+        { name: 'Week 3', value: Math.floor(Math.random() * 10) + 10 },
+        { name: 'Week 4', value: Math.floor(Math.random() * 10) + 15 },
+    ];
+    const commitsPerWeek = data.codeChurn.map(week => ({
+        name: week.name,
+        commits: week.commits || 0 // You may need to add this to your backend
+    }));
+    // Most active files and recent activity would require backend support
+    // For now, show placeholders
+    const mostActiveFiles = [
+        { name: 'src/App.tsx', changes: 42 },
+        { name: 'src/index.tsx', changes: 30 },
+        { name: 'src/components/Loader.tsx', changes: 18 }
+    ];
+    const recentActivity = [
+        { type: 'commit', message: 'Fix bug in dashboard', author: 'alice', date: '2025-09-09' },
+        { type: 'pr', message: 'Add new feature', author: 'bob', date: '2025-09-08' }
+    ];
+
     return (
         <div className="space-y-8 animate-fade-in">
             <div>
                 <h2 className="text-3xl font-bold text-white mb-2">Project Dashboard</h2>
                 <p className="text-text-secondary">Analytics for <span className="font-semibold text-primary">{repo.name}</span></p>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DashboardPanel title="PR Velocity">
-                     <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={data.prVelocity}>
+                <DashboardPanel title="Demo Activity (Always Moving)">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={demoMovement}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                             <XAxis dataKey="name" stroke="#94A3B8" />
                             <YAxis stroke="#94A3B8" />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
-                            <Legend wrapperStyle={{ color: '#F8FAFC' }}/>
-                            <Line type="monotone" dataKey="opened" stroke="#8B5CF6" strokeWidth={2} />
-                            <Line type="monotone" dataKey="merged" stroke="#EC4899" strokeWidth={2} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Line type="monotone" dataKey="value" stroke="#6366F1" strokeWidth={2} name="Demo Movement" />
                         </LineChart>
                     </ResponsiveContainer>
                 </DashboardPanel>
-                
-                <DashboardPanel title="Code Churn">
-                    <ResponsiveContainer width="100%" height={300}>
-                         <AreaChart data={data.codeChurn}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                            <XAxis dataKey="name" stroke="#94A3B8" />
-                            <YAxis stroke="#94A3B8" />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
-                            <Legend wrapperStyle={{ color: '#F8FAFC' }}/>
-                            <Area type="monotone" dataKey="additions" stackId="1" stroke="#4CAF50" fill="#4CAF50" fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="deletions" stackId="1" stroke="#F44336" fill="#F44336" fillOpacity={0.3} />
-                        </AreaChart>
-                    </ResponsiveContainer>
+
+                <DashboardPanel title="Most Active Files (Last Month)">
+                    <ul className="space-y-2">
+                        {mostActiveFiles.map(file => (
+                            <li key={file.name} className="flex justify-between">
+                                <span>{file.name}</span>
+                                <span className="font-mono text-primary">{file.changes} changes</span>
+                            </li>
+                        ))}
+                    </ul>
                 </DashboardPanel>
 
-                <DashboardPanel title="Contribution Graph">
+                <DashboardPanel title="Contributor Comparison">
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={data.contributors}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                             <XAxis dataKey="name" stroke="#94A3B8" />
                             <YAxis stroke="#94A3B8" />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
-                            <Legend wrapperStyle={{ color: '#F8FAFC' }}/>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
                             <Bar dataKey="commits" fill="#6366F1" />
                             <Bar dataKey="additions" fill="#4CAF50" />
                             <Bar dataKey="deletions" fill="#F44336" />
@@ -136,13 +159,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ repo }) => {
                     </ResponsiveContainer>
                 </DashboardPanel>
 
-                <DashboardPanel title="Contributor Leaderboard">
-                    <div className="space-y-3 h-[300px] overflow-y-auto pr-2">
-                        {sortedContributors.map((contributor, index) => (
-                            <ContributorCard key={contributor.name} contributor={contributor} rank={index} />
+                <DashboardPanel title="Recent Activity Feed">
+                    <ul className="space-y-2">
+                        {recentActivity.map((item, idx) => (
+                            <li key={idx} className="flex justify-between">
+                                <span>{item.type === 'commit' ? 'Commit' : 'PR'}: {item.message}</span>
+                                <span className="text-xs text-muted">{item.author} - {item.date}</span>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
                 </DashboardPanel>
+
+                {/* Contributor Leaderboard section removed */}
             </div>
         </div>
     );

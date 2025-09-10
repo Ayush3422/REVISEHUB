@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import type { Repo, TreeNode } from '../types';
 import { getFileTree, getFileContent } from '../services/githubService';
@@ -16,13 +15,23 @@ export const FileExplorerView: React.FC<FileExplorerViewProps> = ({ repo }) => {
     const [fileContent, setFileContent] = useState<string>('');
     const [isLoadingTree, setIsLoadingTree] = useState(true);
     const [isLoadingFile, setIsLoadingFile] = useState(false);
+    const [error, setError] = useState<string | null>(null); // State to hold error messages
 
     useEffect(() => {
         const fetchTree = async () => {
             setIsLoadingTree(true);
-            const fileTree = await getFileTree(repo.url);
-            setTree(fileTree);
-            setIsLoadingTree(false);
+            setError(null); // Reset error state on new fetch
+            try {
+                const fileTree = await getFileTree(repo.url);
+                setTree(fileTree);
+            } catch (err) {
+                console.error("Failed to fetch file tree:", err);
+                // Set a user-friendly error message
+                setError('Failed to load repository files. The repository might be private, empty, or you may have exceeded the GitHub API rate limit.');
+            } finally {
+                // This ensures loading is always set to false, even if an error occurs
+                setIsLoadingTree(false);
+            }
         };
         fetchTree();
     }, [repo.url]);
@@ -30,9 +39,15 @@ export const FileExplorerView: React.FC<FileExplorerViewProps> = ({ repo }) => {
     const handleFileSelect = async (filePath: string) => {
         setSelectedFile(filePath);
         setIsLoadingFile(true);
-        const content = await getFileContent(repo.url, filePath);
-        setFileContent(content);
-        setIsLoadingFile(false);
+        try {
+            const content = await getFileContent(repo.url, filePath);
+            setFileContent(content);
+        } catch (err) {
+            console.error("Failed to fetch file content:", err);
+            setFileContent(`// Error: Could not load content for ${filePath}`);
+        } finally {
+            setIsLoadingFile(false);
+        }
     };
 
     return (
@@ -41,7 +56,13 @@ export const FileExplorerView: React.FC<FileExplorerViewProps> = ({ repo }) => {
             <p className="text-text-secondary mb-6">Browse the repository structure for <span className="font-semibold text-primary">{repo.name}</span></p>
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden">
                 <div className="md:col-span-1 bg-surface/50 border border-muted/50 rounded-xl overflow-auto p-4">
-                    {isLoadingTree ? <Loader text="Loading file tree..." /> : <FileTree tree={tree} onFileSelect={handleFileSelect} />}
+                    {isLoadingTree ? (
+                        <Loader text="Loading file tree..." />
+                    ) : error ? (
+                        <div className="text-red-400 bg-red-900/50 p-4 rounded-lg">{error}</div>
+                    ) : (
+                        <FileTree tree={tree} onFileSelect={handleFileSelect} />
+                    )}
                 </div>
                 <div className="md:col-span-2 bg-surface/50 border border-muted/50 rounded-xl overflow-auto flex flex-col">
                     <div className="p-4 border-b border-muted/50">

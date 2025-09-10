@@ -22,7 +22,7 @@ export const CodeReviewView: React.FC<CodeReviewViewProps> = ({ repo, pullReques
   const fetchDiff = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedDiff = await getPullRequestDiff(pullRequest.id, pullRequest.title);
+  const fetchedDiff = await getPullRequestDiff(repo.url, pullRequest.id);
       setDiff(fetchedDiff);
     } catch (err) {
       setError('Failed to fetch code diff.');

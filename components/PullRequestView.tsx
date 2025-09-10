@@ -45,28 +45,32 @@ export const PullRequestView: React.FC<PullRequestViewProps> = ({ repo, onSelect
       <h2 className="text-3xl font-bold text-white mb-2">Changes Required</h2>
       <p className="text-text-secondary mb-6">Select a change to review its details and get AI feedback.</p>
       <div className="bg-surface/50 border border-muted/50 rounded-xl shadow-lg">
-        <ul className="divide-y divide-muted/50">
-          {pullRequests.map((pr) => (
-            <li key={pr.id}>
-              <button onClick={() => onSelectPullRequest(pr)} className="w-full flex items-center p-4 hover:bg-surface transition-colors duration-200">
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-text-primary">{pr.title} <span className="text-text-secondary">#{pr.id}</span></p>
-                  <div className="flex items-center text-sm text-text-secondary mt-1">
-                    <img src={pr.authorAvatar} alt={pr.author} className="w-5 h-5 rounded-full mr-2" />
-                    <span>{pr.author}</span>
-                    <span className="mx-2">&middot;</span>
-                    <span className="font-mono bg-background px-1.5 py-0.5 rounded-md text-secondary text-xs">{pr.branch}</span>
+        {pullRequests.length === 0 ? (
+          <div className="p-6 text-center text-text-secondary">No pull requests found for this repository.</div>
+        ) : (
+          <ul className="divide-y divide-muted/50">
+            {pullRequests.map((pr) => (
+              <li key={pr.id}>
+                <button onClick={() => onSelectPullRequest(pr)} className="w-full flex items-center p-4 hover:bg-surface transition-colors duration-200">
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-text-primary">{pr.title} <span className="text-text-secondary">#{pr.id}</span></p>
+                    <div className="flex items-center text-sm text-text-secondary mt-1">
+                      <img src={pr.authorAvatar} alt={pr.author} className="w-5 h-5 rounded-full mr-2" />
+                      <span>{pr.author}</span>
+                      <span className="mx-2">&middot;</span>
+                      <span className="font-mono bg-background px-1.5 py-0.5 rounded-md text-secondary text-xs">{pr.branch}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center text-sm ml-4">
-                    <span className="text-green-400 mr-2">+{pr.additions}</span>
-                    <span className="text-red-400 mr-4">-{pr.deletions}</span>
-                    <ChevronRightIcon className="w-5 h-5 text-muted" />
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
+                  <div className="flex items-center text-sm ml-4">
+                      <span className="text-green-400 mr-2">+{pr.additions}</span>
+                      <span className="text-red-400 mr-4">-{pr.deletions}</span>
+                      <ChevronRightIcon className="w-5 h-5 text-muted" />
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
