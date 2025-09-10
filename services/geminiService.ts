@@ -1,10 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import type { CodeSuggestion } from '../types';
 import { SuggestionCategory, SuggestionSeverity } from "../types";
 
-// The API key must be obtained exclusively from the environment variable `process.env.API_KEY`.
-// Fix: Correctly initialize GoogleGenAI with a named apiKey parameter.
-const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+// Correctly initialize GoogleGenAI with the API key from the environment variable
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 const codeReviewPrompt = `
 You are an expert senior software engineer performing a code review.
@@ -20,55 +19,23 @@ Do not comment on minor stylistic preferences unless they significantly impact r
 Return your response as a JSON array of suggestions.
 `;
 
-const responseSchema = {
-    type: Type.ARRAY,
-    items: {
-      type: Type.OBJECT,
-      properties: {
-        category: {
-          type: Type.STRING,
-          enum: Object.values(SuggestionCategory),
-          description: 'The category of the suggestion.'
-        },
-        severity: {
-          type: Type.STRING,
-          enum: Object.values(SuggestionSeverity),
-          description: 'The severity of the issue.'
-        },
-        description: {
-          type: Type.STRING,
-          description: 'A concise description of the issue and why the suggestion is an improvement.'
-        },
-        suggestion: {
-          type: Type.STRING,
-          description: 'A code snippet showing the suggested fix. Use markdown for code blocks.'
-        }
-      },
-      required: ['category', 'severity', 'description', 'suggestion']
-    }
-};
-
-
 export async function reviewCode(diff: string): Promise<CodeSuggestion[]> {
   try {
-    // Fix: Use ai.models.generateContent with the correct model 'gemini-2.5-flash' and parameters.
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    // Generate content using the new SDK method
+    const result = await genAI.models.generateContent({
+      model: "gemini-1.5-flash",
       contents: `${codeReviewPrompt}\n\nCode Diff:\n\`\`\`diff\n${diff}\n\`\`\``,
       config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
-        temperature: 0.2, // Lower temperature for more deterministic and focused reviews
-      },
+        temperature: 0.2,
+      }
     });
-
-    // Fix: Directly access the .text property from the response to get the generated content.
-    const jsonStr = response.text.trim();
-    const suggestions: CodeSuggestion[] = JSON.parse(jsonStr);
-    return suggestions;
+  const jsonStr = result.candidates[0]?.content?.parts?.[0]?.text || '';
+  // Parse the JSON string into an array of CodeSuggestion objects
+  const suggestions: CodeSuggestion[] = JSON.parse(jsonStr);
+  return suggestions;
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    // Add more robust error handling
     if (error instanceof Error) {
         throw new Error(`Gemini API Error: ${error.message}`);
     }
@@ -96,17 +63,15 @@ export async function analyzeProject(
     - PR Velocity Data: ${velocity}
     `;
 
-    try {
-        // Fix: Use ai.models.generateContent with the correct model 'gemini-2.5-flash' and parameters.
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: analysisPrompt,
-            config: {
-                temperature: 0.5,
-            },
-        });
-        // Fix: Directly access the .text property for the response.
-        return response.text;
+  try {
+    const result = await genAI.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: analysisPrompt,
+      config: {
+        temperature: 0.5,
+      },
+    });
+  return result.candidates[0]?.content?.parts?.[0]?.text || '';
     } catch (error) {
         console.error("Error calling Gemini API for project analysis:", error);
         if (error instanceof Error) {
