@@ -101,9 +101,11 @@ export function wrapProviderError(error: unknown, context: string): never {
   if (/SAFETY|blocked|RECITATION/i.test(message)) {
     throw new UpstreamError('The AI provider declined to answer for this content.');
   }
-  if (/model|NOT_FOUND|404/i.test(message)) {
+  // Deliberately narrow: an unqualified /model/ would swallow almost every
+  // provider error, since the word appears in most of them.
+  if (/NOT_FOUND|404|is no longer available|not found for API version/i.test(message)) {
     throw new UpstreamError(
-      'The configured AI model is unavailable. It may have been retired — set GEMINI_MODEL to a current model.',
+      'The configured AI model is unavailable — Google retires models and blocks older ones for newly issued keys. Set GEMINI_MODEL to `gemini-flash-latest` to track the current model.',
     );
   }
   throw new UpstreamError('The AI service is unavailable right now. Please try again.');

@@ -16,7 +16,14 @@ import { AppError } from '@/lib/errors';
  */
 const schema = z.object({
   GEMINI_API_KEY: z.string().min(1).optional(),
-  GEMINI_MODEL: z.string().min(1).default('gemini-2.5-flash'),
+  /**
+   * A moving alias by default, not a pinned version. This project has already
+   * been broken twice by model retirement (gemini-1.5-flash, then
+   * gemini-2.5-flash, which Google now blocks for newly issued keys). The
+   * alias tracks the current Flash model, so the app keeps working.
+   * Pin an explicit version here if you need reproducible output.
+   */
+  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
   /**
    * Optional. Without it the GitHub API allows 60 requests/hour per IP, which
    * is not enough to load a dashboard. With a token it is 5,000/hour.
