@@ -1,32 +1,29 @@
 import 'server-only';
 import { Type } from '@google/genai';
 import { z } from 'zod';
-import { gemini, model, wrapGeminiError } from './client';
+import { resolveProvider, wrapProviderError } from './provider';
 import { limitDiff, parseDiff } from '@/lib/diff';
-import { SUGGESTION_CATEGORIES, SUGGESTION_SEVERITIES } from '@/lib/types';
-import type { CodeSuggestion } from '@/lib/types';
+import { FINDING_CATEGORIES, type Finding } from '@/lib/analysis/types';
 
 /** Roughly 80k characters keeps a review inside a comfortable token budget. */
 const MAX_DIFF_CHARS = 80_000;
 
 /**
- * Handed to Gemini as `responseSchema`, which constrains decoding so the model
- * cannot emit a shape we did not ask for. The previous implementation asked for
- * JSON in prose and then ran `JSON.parse` on whatever came back, so one stray
- * token took down the whole review.
+ * Constrains decoding so the model cannot emit a shape we did not ask for.
+ * The result is still validated with Zod afterwards.
  */
 const responseSchema = {
   type: Type.OBJECT,
-  required: ['suggestions'],
+  required: ['findings'],
   properties: {
-    suggestions: {
+    findings: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         required: ['category', 'severity', 'file', 'title', 'description', 'confidence'],
         properties: {
-          category: { type: Type.STRING, enum: [...SUGGESTION_CATEGORIES] },
-          severity: { type: Type.STRING, enum: [...SUGGESTION_SEVERITIES] },
+          category: { type: Type.STRING, enum: [...FINDING_CATEGORIES] },
+          severity: { type: Type.STRING, enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] },
           file: { type: Type.STRING, description: 'Path exactly as it appears in the diff.' },
           line: {
             type: Type.INTEGER,
@@ -34,6 +31,7 @@ const responseSchema = {
           },
           title: { type: Type.STRING, description: 'Under 80 characters.' },
           description: { type: Type.STRING },
+          remediation: { type: Type.STRING, description: 'How to fix it.' },
           suggestedCode: {
             type: Type.STRING,
             description: 'Replacement code only, no markdown fences. Empty if not a code change.',
@@ -45,113 +43,136 @@ const responseSchema = {
   },
 };
 
-/** Belt and braces: the schema constrains the model, Zod verifies the result. */
-const suggestionSchema = z.object({
-  category: z.enum(SUGGESTION_CATEGORIES),
-  severity: z.enum(SUGGESTION_SEVERITIES),
+const findingSchema = z.object({
+  category: z.enum(FINDING_CATEGORIES),
+  severity: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
   file: z.string().min(1),
   line: z.number().int().nonnegative().nullish(),
   title: z.string().min(1).max(200),
   description: z.string().min(1),
+  remediation: z.string().default(''),
   suggestedCode: z.string().default(''),
   confidence: z.number().min(0).max(1).catch(0.5),
 });
 
-const payloadSchema = z.object({ suggestions: z.array(suggestionSchema).default([]) });
+const payloadSchema = z.object({ findings: z.array(findingSchema).default([]) });
 
-const SYSTEM_PROMPT = `You are a senior software engineer reviewing a pull request.
+/**
+ * The AI layer is deliberately scoped to what deterministic rules cannot do.
+ * Secrets, dependency CVEs, complexity metrics, and hygiene are already
+ * covered by the engine and reported with certainty; asking the model to
+ * repeat them adds noise and an opportunity to be wrong about something that
+ * was already known.
+ */
+const SYSTEM_PROMPT = `You are a senior engineer reviewing a pull request diff.
 
-Report only problems that are visible in the diff you are given. You are seeing
-changed lines, not the whole codebase, so:
+A deterministic static analysis engine has ALREADY reported the findings listed
+below. Do not repeat them and do not contradict them. Your job is the part a
+rule cannot express:
+
+- Logic and correctness errors: off-by-one, inverted conditions, wrong operator,
+  unhandled null, race conditions, incorrect error handling.
+- Behaviour that does not match what the change appears to intend.
+- Missing edge cases in the changed code.
+- API misuse.
+
+You are seeing changed lines only, not the whole codebase. Therefore:
 - Do not speculate about code you cannot see.
-- Do not report a symbol as undefined merely because its definition is not in the diff.
-- If a concern depends on context outside the diff, either omit it or give it a low confidence.
+- Do not report a symbol as undefined merely because its definition is absent
+  from the diff.
+- If a concern depends on context outside the diff, either omit it or give it a
+  low confidence.
 
-Prioritise, in order: correctness bugs, security flaws, missing error handling,
-performance problems, absent tests, unclear naming or documentation.
-
-Skip pure formatting nits that a linter or formatter would fix automatically.
+Do not report formatting or naming preferences. Do not report missing tests,
+debug statements, or secrets — the engine handles those.
 
 For every finding:
-- "file" must match a path from the diff exactly.
-- "line" must be a line number in the NEW version of the file. Use 0 when the
-  finding applies to the file as a whole.
-- "suggestedCode" is raw replacement code with no markdown fences. Leave it
-  empty when the fix is not a code change.
+- "file" must exactly match a path from the diff.
+- "line" must be a line number in the NEW version of the file, or 0.
+- "suggestedCode" is raw code with no markdown fences.
 - "confidence" reflects how certain you are given only this diff.
 
-Returning an empty list is the correct answer for a clean diff. Never invent
-findings to fill space.`;
+An empty list is the correct answer for a diff with no logic problems. Never
+invent findings to fill space.`;
 
-export interface ReviewResult {
-  suggestions: CodeSuggestion[];
-  /** Files that were reviewed. */
+export interface AiReviewResult {
+  findings: Finding[];
   reviewedFiles: string[];
-  /** Files skipped because they were binary or the diff exceeded the budget. */
   skippedFiles: string[];
 }
 
-export async function reviewDiff(diff: string): Promise<ReviewResult> {
-  const files = parseDiff(diff);
+export interface AiReviewInput {
+  diff: string;
+  /** Findings the engine already reported, so the model does not repeat them. */
+  engineFindings: Finding[];
+  userKey?: string | null;
+}
 
-  if (files.length === 0) {
-    return { suggestions: [], reviewedFiles: [], skippedFiles: [] };
-  }
+export async function reviewDiff({
+  diff,
+  engineFindings,
+  userKey,
+}: AiReviewInput): Promise<AiReviewResult> {
+  const files = parseDiff(diff);
+  if (files.length === 0) return { findings: [], reviewedFiles: [], skippedFiles: [] };
 
   const { text, includedFiles, omittedFiles } = limitDiff(files, MAX_DIFF_CHARS);
+  if (!text) return { findings: [], reviewedFiles: [], skippedFiles: omittedFiles };
 
-  if (!text) {
-    return { suggestions: [], reviewedFiles: [], skippedFiles: omittedFiles };
-  }
+  const alreadyKnown =
+    engineFindings.length > 0
+      ? engineFindings
+          .slice(0, 40)
+          .map(
+            (f) => `- [${f.severity}] ${f.title}${f.file ? ` (${f.file}:${f.line ?? '-'})` : ''}`,
+          )
+          .join('\n')
+      : '(none)';
 
   let raw: unknown;
   try {
-    const response = await gemini().models.generateContent({
-      model: model(),
-      contents: `Review this diff.\n\n\`\`\`diff\n${text}\n\`\`\``,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: 'application/json',
-        responseSchema,
-        temperature: 0.2,
-      },
+    const provider = resolveProvider(userKey);
+    const body = await provider.generate({
+      systemInstruction: SYSTEM_PROMPT,
+      contents: `Findings already reported by the static analysis engine:\n${alreadyKnown}\n\nReview this diff for logic and correctness problems the engine cannot detect.\n\n\`\`\`diff\n${text}\n\`\`\``,
+      temperature: 0.2,
+      jsonSchema: responseSchema,
     });
-
-    const body = response.text;
-    if (!body) return { suggestions: [], reviewedFiles: includedFiles, skippedFiles: omittedFiles };
+    if (!body) return { findings: [], reviewedFiles: includedFiles, skippedFiles: omittedFiles };
     raw = JSON.parse(body);
   } catch (error) {
-    wrapGeminiError(error, 'review');
+    wrapProviderError(error, 'review');
   }
 
   const parsed = payloadSchema.safeParse(raw);
   if (!parsed.success) {
-    console.error('[gemini:review] response failed validation', parsed.error.issues);
-    return { suggestions: [], reviewedFiles: includedFiles, skippedFiles: omittedFiles };
+    console.error('[ai:review] response failed validation', parsed.error.issues);
+    return { findings: [], reviewedFiles: includedFiles, skippedFiles: omittedFiles };
   }
 
   const validPaths = new Set(files.flatMap((f) => [f.newPath, f.oldPath]));
+  const engineKeys = new Set(engineFindings.map((f) => `${f.file}:${f.line}`));
 
-  const suggestions: CodeSuggestion[] = parsed.data.suggestions
-    // Drop hallucinated file paths rather than rendering a card that points nowhere.
-    .filter((s) => validPaths.has(s.file))
-    .map((s) => ({
-      category: s.category,
-      severity: s.severity,
-      file: s.file,
-      line: s.line && s.line > 0 ? s.line : null,
-      title: s.title,
-      description: s.description,
-      suggestedCode: stripFences(s.suggestedCode),
-      confidence: s.confidence,
-    }))
-    .sort((a, b) => {
-      const rank = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-      const bySeverity = rank[a.severity] - rank[b.severity];
-      return bySeverity !== 0 ? bySeverity : b.confidence - a.confidence;
-    });
+  const findings: Finding[] = parsed.data.findings
+    // A path not present in the diff means the model invented it.
+    .filter((f) => validPaths.has(f.file))
+    // Belt and braces on the "do not repeat the engine" instruction.
+    .filter((f) => !engineKeys.has(`${f.file}:${f.line && f.line > 0 ? f.line : null}`))
+    .map((f) => ({
+      ruleId: 'ai/review',
+      source: 'ai' as const,
+      category: f.category,
+      severity: f.severity,
+      title: f.title,
+      description: f.description,
+      file: f.file,
+      line: f.line && f.line > 0 ? f.line : null,
+      ...(f.remediation ? { remediation: f.remediation } : {}),
+      ...(f.suggestedCode ? { suggestedCode: stripFences(f.suggestedCode) } : {}),
+      confidence: f.confidence,
+    }));
 
-  return { suggestions, reviewedFiles: includedFiles, skippedFiles: omittedFiles };
+  return { findings, reviewedFiles: includedFiles, skippedFiles: omittedFiles };
 }
 
 /** Models add markdown fences even when told not to. */

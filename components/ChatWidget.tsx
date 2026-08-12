@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '@/lib/types';
+import { aiHeaders } from '@/lib/client/ai-key';
 import { Markdown } from './ui/Markdown';
 import { CommentIcon } from './icons/CommentIcon';
 
@@ -48,7 +49,7 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({ owner, repo, question, history }),
       });
       const data = await res.json();

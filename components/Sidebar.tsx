@@ -9,15 +9,26 @@ import { DashboardIcon } from './icons/DashboardIcon';
 import { LightbulbIcon } from './icons/LightbulbIcon';
 import { FolderIcon } from './icons/FolderIcon';
 import { SwitchIcon } from './icons/SwitchIcon';
+import { ShieldIcon } from './icons/ShieldIcon';
+import { AiKeyButton } from './AiKeyButton';
 
 const NAV = [
   { segment: 'pulls', label: 'Pull requests', icon: CodeIcon },
+  { segment: 'security', label: 'Security', icon: ShieldIcon },
   { segment: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
   { segment: 'analysis', label: 'AI analysis', icon: LightbulbIcon },
   { segment: 'files', label: 'File explorer', icon: FolderIcon },
 ] as const;
 
-export function Sidebar({ owner, repo }: { owner: string; repo: string }) {
+export function Sidebar({
+  owner,
+  repo,
+  serverKeyConfigured,
+}: {
+  owner: string;
+  repo: string;
+  serverKeyConfigured: boolean;
+}) {
   const pathname = usePathname();
   const base = `/r/${owner}/${repo}`;
 
@@ -61,7 +72,8 @@ export function Sidebar({ owner, repo }: { owner: string; repo: string }) {
         })}
       </ul>
 
-      <div className="mt-auto pt-6 max-lg:hidden">
+      <div className="mt-auto space-y-3 pt-6 max-lg:hidden">
+        <AiKeyButton serverKeyConfigured={serverKeyConfigured} />
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-4 py-2.5 font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"

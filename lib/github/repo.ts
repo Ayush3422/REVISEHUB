@@ -121,13 +121,22 @@ interface RawContent {
   type: string;
 }
 
-export async function getFileContent(ref: RepoRef, path: string): Promise<FileContent> {
+export async function getFileContent(
+  ref: RepoRef,
+  path: string,
+  gitRef?: string,
+): Promise<FileContent> {
   const { owner, repo } = ref;
   const encoded = path.split('/').map(encodeURIComponent).join('/');
 
-  const raw = await ghJsonOrNull<RawContent>(`/repos/${owner}/${repo}/contents/${encoded}`, {
-    revalidate: 600,
-  });
+  // `gitRef` selects a branch, tag, or commit. Analysis of a pull request must
+  // read the proposed code, not whatever is currently on the default branch.
+  const query = gitRef ? `?ref=${encodeURIComponent(gitRef)}` : '';
+
+  const raw = await ghJsonOrNull<RawContent>(
+    `/repos/${owner}/${repo}/contents/${encoded}${query}`,
+    { revalidate: 600 },
+  );
 
   if (!raw) throw new NotFoundError(`File not found: ${path}`);
   if (raw.type !== 'file') throw new NotFoundError(`${path} is not a file.`);
@@ -171,7 +180,7 @@ interface RawPull {
   title: string;
   body: string | null;
   user: { login: string; avatar_url: string } | null;
-  head: { ref: string };
+  head: { ref: string; sha: string };
   base: { ref: string };
   state: 'open' | 'closed';
   draft?: boolean;
@@ -195,6 +204,7 @@ function mapPull(raw: RawPull): PullRequest {
     authorAvatar: raw.user?.avatar_url ?? '',
     branch: raw.head.ref,
     baseBranch: raw.base.ref,
+    headSha: raw.head.sha,
     state: raw.merged_at ? 'merged' : raw.state,
     isDraft: Boolean(raw.draft),
     createdAt: raw.created_at,

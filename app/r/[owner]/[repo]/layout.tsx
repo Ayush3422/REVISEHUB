@@ -5,6 +5,7 @@ import { ChatWidget } from '@/components/ChatWidget';
 import { parseRepoInput } from '@/lib/github/client';
 import { getRepoSummary } from '@/lib/github/repo';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { serverKeyConfigured } from '@/lib/ai/provider';
 
 interface Params {
   params: Promise<{ owner: string; repo: string }>;
@@ -33,7 +34,7 @@ export default async function RepoLayout({
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <Sidebar owner={owner} repo={repo} />
+      <Sidebar owner={owner} repo={repo} serverKeyConfigured={serverKeyConfigured()} />
       <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
       <ChatWidget owner={owner} repo={repo} />
     </div>

@@ -1,5 +1,5 @@
 import 'server-only';
-import { gemini, model, wrapGeminiError } from './client';
+import { resolveProvider, wrapProviderError } from './provider';
 import type { DashboardData, PullRequest, RepoSummary } from '@/lib/types';
 
 const SYSTEM_PROMPT = `You are a principal engineer assessing the health of a software project.
@@ -24,9 +24,15 @@ export interface AnalysisInput {
   repo: RepoSummary;
   dashboard: DashboardData;
   pulls: PullRequest[];
+  userKey?: string | null;
 }
 
-export async function analyzeProject({ repo, dashboard, pulls }: AnalysisInput): Promise<string> {
+export async function analyzeProject({
+  repo,
+  dashboard,
+  pulls,
+  userKey,
+}: AnalysisInput): Promise<string> {
   const open = pulls.filter((p) => p.state === 'open');
   const merged = pulls.filter((p) => p.state === 'merged');
 
@@ -71,13 +77,14 @@ export async function analyzeProject({ repo, dashboard, pulls }: AnalysisInput):
     .join('\n');
 
   try {
-    const response = await gemini().models.generateContent({
-      model: model(),
+    const provider = resolveProvider(userKey);
+    const text = await provider.generate({
+      systemInstruction: SYSTEM_PROMPT,
       contents: `Assess this project.\n\n${facts}`,
-      config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.4 },
+      temperature: 0.4,
     });
-    return response.text ?? 'No analysis was returned.';
+    return text || 'No analysis was returned.';
   } catch (error) {
-    wrapGeminiError(error, 'analyze');
+    wrapProviderError(error, 'analyze');
   }
 }

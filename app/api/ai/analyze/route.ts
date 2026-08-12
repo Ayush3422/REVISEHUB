@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors';
 import { parseRepoInput } from '@/lib/github/client';
 import { getDashboardData, getPullRequests, getRepoSummary } from '@/lib/github/repo';
 import { analyzeProject } from '@/lib/ai/analyze';
+import { userKeyFrom } from '@/lib/ai/provider';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -33,7 +34,12 @@ export async function POST(request: Request) {
       getPullRequests(ref, 50),
     ]);
 
-    const analysis = await analyzeProject({ repo, dashboard, pulls });
+    const analysis = await analyzeProject({
+      repo,
+      dashboard,
+      pulls,
+      userKey: userKeyFrom(request),
+    });
 
     return NextResponse.json({ analysis, statsPending: dashboard.statsPending });
   } catch (error) {

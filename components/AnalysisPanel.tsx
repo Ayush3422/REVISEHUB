@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { aiHeaders } from '@/lib/client/ai-key';
 import { Markdown } from './ui/Markdown';
 import { EmptyState, ErrorPanel } from './ui/Panel';
 import { LightbulbIcon } from './icons/LightbulbIcon';
@@ -22,7 +23,7 @@ export function AnalysisPanel({ owner, repo }: { owner: string; repo: string }) 
     try {
       const res = await fetch('/api/ai/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({ owner, repo }),
       });
       const data = await res.json();

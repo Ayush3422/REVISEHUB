@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { parseRepoInput } from '@/lib/github/client';
 import { getPullRequest, getPullRequestDiff } from '@/lib/github/repo';
 import { DiffViewer } from '@/components/DiffViewer';
-import { ReviewPanel } from '@/components/ReviewPanel';
+import { FindingsPanel } from '@/components/FindingsPanel';
+import { analysePullRequest } from '@/lib/analysis/engine';
 import { ErrorPanel, Stat } from '@/components/ui/Panel';
 import { NotFoundError, toErrorResponse } from '@/lib/errors';
 
@@ -35,6 +36,10 @@ export default async function PullRequestPage({ params }: Params) {
     const { message } = toErrorResponse(error);
     return <ErrorPanel title="Could not load this pull request" message={message} />;
   }
+
+  // Deterministic findings are computed during render, so they are in the
+  // initial HTML rather than arriving after a client round-trip.
+  const engine = await analysePullRequest({ ref, diff, headRef: pr.headSha });
 
   return (
     <div className="flex h-full animate-fade-in flex-col">
@@ -98,7 +103,7 @@ export default async function PullRequestPage({ params }: Params) {
           </div>
         </section>
 
-        <ReviewPanel owner={owner} repo={repo} number={number} />
+        <FindingsPanel owner={owner} repo={repo} number={number} initialEngine={engine} />
       </div>
     </div>
   );

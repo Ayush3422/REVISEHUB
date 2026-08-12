@@ -30,6 +30,12 @@ export interface PullRequest {
   authorAvatar: string;
   branch: string;
   baseBranch: string;
+  /**
+   * Head commit SHA. Required for reading the proposed files: a pull request
+   * from a fork has a head branch that does not exist on the base repository,
+   * but GitHub does serve its commits from the base repo by SHA.
+   */
+  headSha: string;
   state: PullRequestState;
   isDraft: boolean;
   createdAt: string;

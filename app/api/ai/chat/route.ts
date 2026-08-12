@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors';
 import { parseRepoInput } from '@/lib/github/client';
 import { getFileContent, getFileTree, getRepoSummary } from '@/lib/github/repo';
 import { answerRepoQuestion } from '@/lib/ai/chat';
+import { userKeyFrom } from '@/lib/ai/provider';
 
 export const runtime = 'nodejs';
 export const maxDuration = 45;
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
       readme,
       history: body.history,
       question: body.question,
+      userKey: userKeyFrom(request),
     });
 
     return NextResponse.json({ answer });

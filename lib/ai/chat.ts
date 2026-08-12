@@ -1,5 +1,5 @@
 import 'server-only';
-import { gemini, model, wrapGeminiError } from './client';
+import { resolveProvider, wrapProviderError } from './provider';
 import type { ChatMessage, RepoSummary, TreeNode } from '@/lib/types';
 
 /** Keeps the flattened tree from dominating the prompt on large repositories. */
@@ -24,6 +24,7 @@ export interface ChatInput {
   readme: string | null;
   history: ChatMessage[];
   question: string;
+  userKey?: string | null;
 }
 
 export async function answerRepoQuestion({
@@ -32,6 +33,7 @@ export async function answerRepoQuestion({
   readme,
   history,
   question,
+  userKey,
 }: ChatInput): Promise<string> {
   const paths: string[] = [];
   const walk = (nodes: TreeNode[]) => {
@@ -74,13 +76,14 @@ export async function answerRepoQuestion({
   ];
 
   try {
-    const response = await gemini().models.generateContent({
-      model: model(),
+    const provider = resolveProvider(userKey);
+    const text = await provider.generate({
+      systemInstruction: SYSTEM_PROMPT,
       contents,
-      config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.3 },
+      temperature: 0.3,
     });
-    return response.text ?? 'No response was returned.';
+    return text || 'No response was returned.';
   } catch (error) {
-    wrapGeminiError(error, 'chat');
+    wrapProviderError(error, 'chat');
   }
 }
