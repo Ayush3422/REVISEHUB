@@ -32,6 +32,14 @@ const PATTERNS: Pattern[] = [
     regex: /\bAIza[0-9A-Za-z_-]{35}\b/,
   },
   {
+    // Google AI Studio also issues keys in a newer `AQ.` form, which the
+    // `AIza` pattern above does not match. Both are live credentials.
+    id: 'google-aistudio-key',
+    label: 'Google AI Studio API key',
+    severity: 'CRITICAL',
+    regex: /\bAQ\.[A-Za-z0-9_-]{30,}\b/,
+  },
+  {
     id: 'github-token',
     label: 'GitHub token',
     severity: 'CRITICAL',

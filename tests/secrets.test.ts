@@ -31,6 +31,22 @@ describe('secret detection', () => {
     expect(run('src/g.ts', 'const k = "AIzaShortString";')).toHaveLength(0);
   });
 
+  /**
+   * Google AI Studio issues keys in a second, longer `AQ.` format. The rule
+   * originally only knew the `AIza` shape and silently missed these — which is
+   * the worst kind of gap in a secret scanner, because a clean result reads as
+   * an all-clear.
+   */
+  it('detects the newer Google AI Studio key format', () => {
+    const findings = run('src/g.ts', `const k = "AQ.Ab8RN6${'Jy'.repeat(20)}";`);
+    expect(findings.map((f) => f.ruleId)).toContain('secrets/google-aistudio-key');
+    expect(findings[0]?.severity).toBe('CRITICAL');
+  });
+
+  it('does not match a short AQ.-prefixed string', () => {
+    expect(run('src/g.ts', 'const k = "AQ.Something";')).toHaveLength(0);
+  });
+
   it('detects a private key block', () => {
     const findings = run('deploy/key', '-----BEGIN RSA PRIVATE KEY-----');
     expect(findings.map((f) => f.ruleId)).toContain('secrets/private-key');
