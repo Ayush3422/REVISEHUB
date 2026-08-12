@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js
+.next
+out
+next-env.d.ts
+.vercel
+
+# Env files (never commit real keys)
+.env
+.env.local
+.env.*.local

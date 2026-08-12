@@ -1,0 +1,105 @@
+import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import { parseRepoInput } from '@/lib/github/client';
+import { getPullRequest, getPullRequestDiff } from '@/lib/github/repo';
+import { DiffViewer } from '@/components/DiffViewer';
+import { ReviewPanel } from '@/components/ReviewPanel';
+import { ErrorPanel, Stat } from '@/components/ui/Panel';
+import { NotFoundError, toErrorResponse } from '@/lib/errors';
+
+export const revalidate = 120;
+
+interface Params {
+  params: Promise<{ owner: string; repo: string; number: string }>;
+}
+
+export async function generateMetadata({ params }: Params) {
+  const { owner, repo, number } = await params;
+  return { title: `PR #${number} · ${owner}/${repo}` };
+}
+
+export default async function PullRequestPage({ params }: Params) {
+  const { owner, repo, number: rawNumber } = await params;
+
+  const number = Number(rawNumber);
+  if (!Number.isInteger(number) || number <= 0) notFound();
+
+  const ref = parseRepoInput(`${owner}/${repo}`);
+
+  let pr, diff;
+  try {
+    [pr, diff] = await Promise.all([getPullRequest(ref, number), getPullRequestDiff(ref, number)]);
+  } catch (error) {
+    if (error instanceof NotFoundError) notFound();
+    const { message } = toErrorResponse(error);
+    return <ErrorPanel title="Could not load this pull request" message={message} />;
+  }
+
+  return (
+    <div className="flex h-full animate-fade-in flex-col">
+      <header className="mb-6">
+        <Link
+          href={`/r/${owner}/${repo}/pulls`}
+          className="text-sm text-primary transition hover:underline"
+        >
+          &larr; Back to pull requests
+        </Link>
+
+        <h1 className="mt-3 text-2xl font-bold text-white lg:text-3xl">
+          {pr.title} <span className="font-normal text-text-secondary">#{pr.number}</span>
+        </h1>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-text-secondary">
+          {pr.authorAvatar && (
+            <Image
+              src={pr.authorAvatar}
+              alt=""
+              width={24}
+              height={24}
+              className="rounded-full"
+              unoptimized
+            />
+          )}
+          <span className="font-semibold text-text-primary">{pr.author}</span>
+          <span>wants to merge</span>
+          <code className="rounded bg-surface px-1.5 py-0.5 text-xs text-secondary">
+            {pr.branch}
+          </code>
+          <span>into</span>
+          <code className="rounded bg-surface px-1.5 py-0.5 text-xs text-secondary">
+            {pr.baseBranch}
+          </code>
+          <a
+            href={pr.htmlUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-1 text-primary transition hover:underline"
+          >
+            View on GitHub ↗
+          </a>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Additions" value={`+${pr.additions}`} tone="positive" />
+          <Stat label="Deletions" value={`-${pr.deletions}`} tone="negative" />
+          <Stat label="Files" value={pr.changedFiles} />
+          <Stat label="Commits" value={pr.commits} />
+        </div>
+      </header>
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-muted/50 bg-surface/50">
+          <header className="border-b border-muted/50 px-5 py-3">
+            <h2 className="font-semibold text-white">Code changes</h2>
+          </header>
+          <div className="flex-1 overflow-y-auto p-4">
+            <DiffViewer diff={diff} />
+          </div>
+        </section>
+
+        <ReviewPanel owner={owner} repo={repo} number={number} />
+      </div>
+    </div>
+  );
+}
