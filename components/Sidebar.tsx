@@ -10,10 +10,12 @@ import { LightbulbIcon } from './icons/LightbulbIcon';
 import { FolderIcon } from './icons/FolderIcon';
 import { SwitchIcon } from './icons/SwitchIcon';
 import { ShieldIcon } from './icons/ShieldIcon';
+import { ZapIcon } from './icons/ZapIcon';
 import { AiKeyButton } from './AiKeyButton';
 
 const NAV = [
   { segment: 'pulls', label: 'Pull requests', icon: CodeIcon },
+  { segment: 'efficiency', label: 'Efficiency', icon: ZapIcon },
   { segment: 'security', label: 'Security', icon: ShieldIcon },
   { segment: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
   { segment: 'analysis', label: 'AI analysis', icon: LightbulbIcon },

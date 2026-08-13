@@ -36,13 +36,19 @@ aside when it is not.
 
 Same input, same output, every time. Findings are labelled **Verified rule** in the UI.
 
-| Rule group | Finds |
-| --- | --- |
-| **Secrets** | AWS, Google, GitHub, Slack, Stripe, OpenAI, Anthropic keys, JWTs, private keys, and database URLs with passwords, added in a diff. The matched value is always redacted. |
-| **Dependencies** | Known CVEs in `package.json` via [OSV.dev](https://osv.dev) — real advisory IDs, severity, and fixed versions. Dev dependencies are ranked lower than runtime ones. |
-| **Hygiene** | `console.log`/`debugger` left in, `.env` or key files committed, merge conflict markers, TODO markers, oversized changes, source changed without tests. |
-| **Complexity** | Cyclomatic complexity, function length, nesting depth, parameter count — from the syntax tree of changed JS/TS files. Test, generated, and vendored files are excluded. |
-| **Repo health** | Missing CI, tests, README, licence, `.gitignore`, or lockfile. |
+| Rule group       | Finds                                                                                                                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Secrets**      | AWS, Google, GitHub, Slack, Stripe, OpenAI, Anthropic keys, JWTs, private keys, and database URLs with passwords, added in a diff. The matched value is always redacted.                                                       |
+| **Dependencies** | Known CVEs in `package.json` via [OSV.dev](https://osv.dev) — real advisory IDs, severity, and fixed versions. Dev dependencies are ranked lower than runtime ones.                                                            |
+| **Hygiene**      | `console.log`/`debugger` left in, `.env` or key files committed, merge conflict markers, TODO markers, oversized changes, source changed without tests.                                                                        |
+| **Complexity**   | Cyclomatic complexity, function length, nesting depth, parameter count — from the syntax tree of changed JS/TS files. Test, generated, and vendored files are excluded.                                                        |
+| **Efficiency**   | Nested loops, a linear scan inside a loop, `await` in a loop, spread accumulation, sorting or building a regex in a loop, `shift`/`unshift` in a loop, `JSON.parse(JSON.stringify())` cloning. Scored 0–100 with an A–F grade. |
+| **Repo health**  | Missing CI, tests, README, licence, `.gitignore`, or lockfile.                                                                                                                                                                 |
+
+**Efficiency is detection, not measurement.** Nothing is benchmarked, because
+benchmarking would mean executing code from an arbitrary repository on the server —
+see [Safety of the analysis engine](#safety-of-the-analysis-engine). A clean report
+means no known slow pattern was found, not that the code is fast.
 
 ### The AI layer — optional
 
@@ -50,6 +56,12 @@ Scoped to what rules cannot express: logic errors, inverted conditions, unhandle
 nulls, missing edge cases, API misuse. It is told what the engine already found so it
 does not repeat it. Findings are labelled **AI** with a confidence score, and are never
 presented as equivalent to a verified rule.
+
+It also powers the **optimizer** on the Efficiency page: given a file and the engine's
+findings, it returns a complete rewrite with a per-change explanation and the
+complexity before and after, shown side by side with the original. Preserving
+observable behaviour is a hard requirement — where a speed-up would change behaviour,
+the rewrite must declare it, and the UI surfaces that as a warning.
 
 ---
 
@@ -65,11 +77,11 @@ npm install
 cp .env.example .env.local
 ```
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `GITHUB_TOKEN` | Strongly recommended | Raises the GitHub API limit from 60 requests/hour to 5,000. A fine-grained token with public repository read access is enough. |
-| `GEMINI_API_KEY` | Only for AI features | [Get one here](https://aistudio.google.com/apikey). Without it, everything except the AI layer still works. |
-| `GEMINI_MODEL` | No | Defaults to `gemini-2.5-flash`. |
+| Variable         | Required             | Purpose                                                                                                                                                                                                                |
+| ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`   | Strongly recommended | Raises the GitHub API limit from 60 requests/hour to 5,000. A fine-grained token with public repository read access is enough.                                                                                         |
+| `GEMINI_API_KEY` | Only for AI features | [Get one here](https://aistudio.google.com/apikey). Without it, everything except the AI layer still works.                                                                                                            |
+| `GEMINI_MODEL`   | No                   | Defaults to `gemini-flash-latest`, a moving alias. Google retires models and blocks older ones for newly issued keys — this project has been broken by that twice. Pin a version only if you need reproducible output. |
 
 ```bash
 npm run dev
@@ -86,14 +98,14 @@ precedence over the server's, so a deployed demo does not burn the owner's quota
 
 ### Scripts
 
-| Command | Does |
-| --- | --- |
-| `npm run dev` | Development server |
-| `npm run build` / `npm start` | Production build and serve |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest |
-| `npm run verify` | All four, in order — what CI runs |
+| Command                       | Does                              |
+| ----------------------------- | --------------------------------- |
+| `npm run dev`                 | Development server                |
+| `npm run build` / `npm start` | Production build and serve        |
+| `npm run typecheck`           | `tsc --noEmit`                    |
+| `npm run lint`                | ESLint                            |
+| `npm test`                    | Vitest                            |
+| `npm run verify`              | All four, in order — what CI runs |
 
 ---
 
@@ -105,20 +117,24 @@ app/
   r/[owner]/[repo]/
     pulls/                          Pull request list
     pulls/[number]/                 Diff viewer + findings panel
+    efficiency/                     Efficiency grade + AI optimizer
     security/                       Dependency CVEs + repo health
     dashboard/                      Contributor, churn, velocity charts
     analysis/                       AI project assessment
     files/                          File tree and viewer
   api/
-    analysis/pull                   Engine (no key)
-    ai/review · ai/analyze · ai/chat
+    analysis/pull                   Engine, pull request (no key)
+    analysis/efficiency             Engine, single file (no key)
+    ai/review · ai/analyze · ai/chat · ai/optimize
     github/file
 lib/
   analysis/
     types.ts                        Finding schema, shared by both engines
     engine.ts                       Rule orchestration
-    rules/                          secrets · hygiene · complexity · dependencies · repo-health
+    rules/                          secrets · hygiene · complexity · efficiency ·
+                                    dependencies · repo-health
   ai/provider.ts                    Provider interface + Gemini implementation
+  ai/optimize.ts                    Behaviour-preserving rewrite of a slow file
   github/                           GitHub API client and data layer
   diff.ts                           Unified diff parser
 tests/                              Vitest suites for the parser and rules
@@ -130,9 +146,11 @@ tests/                              Vitest suites for the parser and rules
 `server-only` package. If any is ever imported from a Client Component, the build fails
 rather than shipping a key to the browser.
 
+<a id="safety-of-the-analysis-engine"></a>
+
 ### Safety of the analysis engine
 
-Complexity analysis uses `ts.createSourceFile`, which parses text into an AST and
+Complexity and efficiency analysis use `ts.createSourceFile`, which parses text into an AST and
 nothing more. **No code from the target repository is executed, and none of its
 configuration is loaded.** This is deliberate: running a repository's own ESLint or
 build config would mean executing arbitrary code from a stranger's repository on the
@@ -149,13 +167,13 @@ than rendering zeroes as though they were measurements.
 
 ## Cost
 
-| Piece | Cost |
-| --- | --- |
-| Vercel Hobby hosting | Free (non-commercial use) |
-| GitHub API | Free |
-| OSV.dev vulnerability database | Free, no account |
-| The whole analysis engine | Free, no key |
-| Gemini | Free tier, and entirely optional |
+| Piece                          | Cost                             |
+| ------------------------------ | -------------------------------- |
+| Vercel Hobby hosting           | Free (non-commercial use)        |
+| GitHub API                     | Free                             |
+| OSV.dev vulnerability database | Free, no account                 |
+| The whole analysis engine      | Free, no key                     |
+| Gemini                         | Free tier, and entirely optional |
 
 ---
 
