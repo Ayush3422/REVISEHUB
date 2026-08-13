@@ -11,9 +11,9 @@ import type { PullRequestState } from '@/lib/types';
 export const revalidate = 120;
 
 const STATE_STYLES: Record<PullRequestState, string> = {
-  open: 'bg-emerald-500/15 text-emerald-400',
+  open: 'bg-emerald-500/15 text-success',
   merged: 'bg-violet-500/15 text-violet-400',
-  closed: 'bg-red-500/15 text-red-400',
+  closed: 'bg-red-500/15 text-danger',
 };
 
 function relativeTime(iso: string): string {
@@ -46,7 +46,7 @@ export default async function PullsPage({
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white">Pull requests</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Pull requests</h1>
         <p className="mt-1 text-text-secondary">
           {pulls.length > 0
             ? `${pulls.length} most recently updated. Open one to review its diff with AI.`
@@ -54,7 +54,7 @@ export default async function PullsPage({
         </p>
       </header>
 
-      <div className="overflow-hidden rounded-xl border border-muted/50 bg-surface/50 shadow-lg">
+      <div className="overflow-hidden glass rounded-2xl shadow-lg">
         {pulls.length === 0 ? (
           <EmptyState
             icon={<CodeIcon className="h-10 w-10" />}
@@ -62,12 +62,12 @@ export default async function PullsPage({
             message={`${owner}/${repo} has no pull requests yet, so there is nothing to review here.`}
           />
         ) : (
-          <ul className="divide-y divide-muted/40">
+          <ul className="divide-y divide-white/[0.06]">
             {pulls.map((pr) => (
               <li key={pr.number}>
                 <Link
                   href={`/r/${owner}/${repo}/pulls/${pr.number}`}
-                  className="flex items-center gap-4 p-4 transition-colors hover:bg-surface"
+                  className="flex items-center gap-4 p-4 transition-colors hover:bg-white/[0.05]"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -100,7 +100,7 @@ export default async function PullsPage({
                       )}
                       <span>{pr.author}</span>
                       <span aria-hidden="true">·</span>
-                      <code className="rounded bg-background px-1.5 py-0.5 text-xs text-secondary">
+                      <code className="rounded bg-background px-1.5 py-0.5 text-xs text-neon-cyan">
                         {pr.branch}
                       </code>
                       <span aria-hidden="true">·</span>

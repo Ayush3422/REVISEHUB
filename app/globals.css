@@ -1,25 +1,58 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens. These mirror the palette that used to live in the inline
- * `tailwind.config` in index.html, so existing class names (bg-surface,
- * text-text-secondary, animate-fade-in, ...) keep working. The difference is
- * that Tailwind is now compiled at build time rather than pulled from a CDN.
+ * ReviseHub — "Modern Dark": glassmorphism over a deep-space field, with neon
+ * accents.
+ *
+ * Every foreground colour below was checked against the composited glass
+ * surface (white at 6% over #0A0F1E, which renders as #191D2C), not against the
+ * page background. That distinction matters: glass lightens whatever sits under
+ * it, so contrast measured on the raw background overstates the real ratio.
+ * All text and accent tokens clear WCAG AA 4.5:1 there.
  */
 @theme {
-  --color-background: #0f172a;
-  --color-surface: #1e293b;
-  --color-primary: #8b5cf6;
-  --color-secondary: #ec4899;
-  --color-muted: #475569;
-  --color-text-primary: #f8fafc;
+  /* --- Surfaces. Never pure black: it smears on OLED and kills depth. --- */
+  --color-void: #060913;
+  --color-background: #0a0f1e;
+  --color-surface: #131a2c;
+  --color-elevated: #1a2337;
+
+  /* --- Neon accents, all >= 6:1 on glass --- */
+  --color-neon-violet: #a78bfa;
+  --color-neon-cyan: #22d3ee;
+  --color-neon-pink: #f472b6;
+  --color-neon-lime: #a3e635;
+
+  --color-primary: #a78bfa;
+  --color-secondary: #f472b6;
+  --color-accent: #22d3ee;
+
+  /* --- Text. `muted` is #7A879E, not the usual #64748B, which fell to
+         3.5:1 on glass and would have failed AA for body text. --- */
+  --color-text-primary: #f1f5f9;
   --color-text-secondary: #94a3b8;
+  --color-muted: #7a879e;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-border: #253049;
 
-  --animate-fade-in: fade-in 0.5s ease-in-out;
-  --animate-fade-in-up: fade-in-up 0.5s ease-in-out;
+  /* --- Status --- */
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Expo-out. Fast departure, long settle — reads as "engineered" rather
+     than bouncy, which suits a tool over a toy. */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-in: fade-in 0.4s var(--ease-expo) both;
+  --animate-fade-in-up: fade-in-up 0.45s var(--ease-expo) both;
+  --animate-drift: drift 22s ease-in-out infinite;
+  --animate-drift-slow: drift 34s ease-in-out infinite reverse;
+  --animate-sweep: sweep 2.2s var(--ease-expo) infinite;
+  --animate-pulse-glow: pulse-glow 2.6s ease-in-out infinite;
 
   @keyframes fade-in {
     from {
@@ -29,44 +62,265 @@
       opacity: 1;
     }
   }
-
   @keyframes fade-in-up {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(4vw, -3vh) scale(1.08);
+    }
+    66% {
+      transform: translate(-3vw, 4vh) scale(0.95);
+    }
+  }
+  @keyframes sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(200%);
+    }
+  }
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+html {
+  color-scheme: dark;
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
+  /* The glass has to sit over something with colour, or it reads as flat grey. */
   background-image:
-    radial-gradient(circle at top left, rgba(12, 74, 110, 0.3), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(109, 40, 217, 0.2), transparent 40%);
+    radial-gradient(900px circle at 12% -5%, rgba(139, 92, 246, 0.16), transparent 55%),
+    radial-gradient(800px circle at 92% 8%, rgba(34, 211, 238, 0.12), transparent 50%),
+    radial-gradient(1000px circle at 55% 105%, rgba(236, 72, 153, 0.1), transparent 55%);
   background-attachment: fixed;
+  min-height: 100vh;
 }
+
+/* Faint engineering grid. Low enough not to compete with content, present
+   enough to stop large empty areas reading as dead space. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 120% 80% at 50% 0%, #000 35%, transparent 78%);
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * These live in `@layer components`, not in `@utility`.
+ *
+ * Tailwind's @utility pipeline silently dropped both `backdrop-filter` and
+ * `-webkit-backdrop-filter` from the emitted rule — background, border and
+ * box-shadow came through, the blur did not, which quietly removed the one
+ * property glassmorphism actually depends on. `@layer components` passes the
+ * declarations through untouched, and still sits below `utilities` in the
+ * cascade so a `border-0` or `rounded-none` on the element continues to win.
+ */
+@layer components {
+  /* ---------------------------------------------------------------------------
+     Glass
+  --------------------------------------------------------------------------- */
+
+  /*
+ * `backdrop-filter` is the expensive part of this aesthetic, so it lives on a
+ * small number of container-level elements rather than on every card. Cards use
+ * a plain translucent fill and inherit the blur from the surface behind them.
+ */
+  .glass {
+    background: rgba(255, 255, 255, 0.045);
+    /* Do not hand-write a -webkit- alias here. Lightning CSS prefixes for the
+       configured targets on its own, and supplying both made it deduplicate
+       down to the prefixed property alone, dropping the standard one — which
+       Chrome then reported as `backdrop-filter: none`. */
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    /* A brighter top edge fakes a light source above the panel. Without it,
+       translucent panels look like flat grey rectangles rather than glass. */
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.09),
+      0 8px 32px rgba(3, 6, 16, 0.55);
+  }
+
+  .glass-strong {
+    background: rgba(19, 26, 44, 0.82);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+      0 24px 64px rgba(3, 6, 16, 0.7);
+  }
+
+  /* Nested card. No blur — it would compound with the parent for no visual gain. */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-inset {
+    background: rgba(3, 6, 16, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.055);
+  }
+
+  /* ---------------------------------------------------------------------------
+     Neon
+  --------------------------------------------------------------------------- */
+
+  .glow-violet {
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.3),
+      0 0 20px rgba(167, 139, 250, 0.22),
+      0 0 48px rgba(167, 139, 250, 0.1);
+  }
+  .glow-cyan {
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.3),
+      0 0 20px rgba(34, 211, 238, 0.22),
+      0 0 48px rgba(34, 211, 238, 0.1);
+  }
+  .glow-pink {
+    box-shadow:
+      0 0 0 1px rgba(244, 114, 182, 0.3),
+      0 0 20px rgba(244, 114, 182, 0.22),
+      0 0 48px rgba(244, 114, 182, 0.1);
+  }
+  .glow-danger {
+    box-shadow:
+      0 0 0 1px rgba(248, 113, 113, 0.32),
+      0 0 20px rgba(248, 113, 113, 0.2);
+  }
+
+  /* Text glow is deliberately restrained: heavy text-shadow destroys the
+     legibility that the contrast checks were done to guarantee. */
+  .text-glow {
+    text-shadow: 0 0 18px currentColor;
+    opacity: 0.98;
+  }
+
+  /* A hairline that fades out at both ends — the "HUD divider". */
+  .rule-glow {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(167, 139, 250, 0.45),
+      rgba(34, 211, 238, 0.35),
+      transparent
+    );
+  }
+
+  /* ---------------------------------------------------------------------------
+     Interaction
+  --------------------------------------------------------------------------- */
+
+  .press {
+    transition:
+      transform 0.18s var(--ease-expo),
+      box-shadow 0.24s var(--ease-expo),
+      background-color 0.2s var(--ease-expo),
+      border-color 0.2s var(--ease-expo),
+      color 0.2s var(--ease-expo);
+  }
+  .press:active {
+    transform: scale(0.975);
+  }
+
+  /* Indeterminate progress: a light sweeping across a track. */
+  .sweep-track {
+    position: relative;
+    overflow: hidden;
+  }
+  .sweep-track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.35), transparent);
+    animation: var(--animate-sweep);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Chrome
+--------------------------------------------------------------------------- */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-muted);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: rgba(167, 139, 250, 0.45);
+  background-clip: content-box;
 }
 
-/* Respect users who have asked the OS to reduce motion. */
+::selection {
+  background: rgba(167, 139, 250, 0.32);
+  color: #fff;
+}
+
+/* Focus must stay visible and must not be replaced by the glow utilities —
+   a decorative shadow is not a focus indicator. */
+:focus-visible {
+  outline: 2px solid var(--color-neon-cyan);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion
+--------------------------------------------------------------------------- */
+
+/*
+ * Drifting blobs and sweeping highlights are exactly the kind of continuous
+ * background motion that triggers vestibular symptoms. They are stopped
+ * outright here rather than merely shortened.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -76,10 +330,7 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* Visible keyboard focus for every interactive element. */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  .sweep-track::after {
+    display: none;
+  }
 }

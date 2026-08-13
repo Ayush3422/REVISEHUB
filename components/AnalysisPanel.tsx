@@ -37,16 +37,16 @@ export function AnalysisPanel({ owner, repo }: { owner: string; repo: string }) 
   };
 
   return (
-    <div className="rounded-xl border border-muted/50 bg-surface/50 p-6 shadow-lg backdrop-blur-sm">
+    <div className="glass rounded-2xl p-6 shadow-lg backdrop-blur-sm">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="flex items-center gap-3 text-xl font-semibold text-white">
-          <LightbulbIcon className="h-6 w-6 text-yellow-400" aria-hidden="true" />
+        <h2 className="flex items-center gap-3 text-xl font-semibold text-text-primary">
+          <LightbulbIcon className="h-6 w-6 text-warning" aria-hidden="true" />
           Assessment
         </h2>
         <button
           onClick={run}
           disabled={isLoading}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:bg-muted disabled:shadow-none"
+          className="flex items-center gap-2 rounded-lg bg-neon-violet px-4 py-2 text-sm font-semibold text-text-primary shadow-lg shadow-neon-violet/25 transition hover:bg-neon-violet/85 disabled:cursor-not-allowed disabled:bg-muted disabled:shadow-none"
         >
           <SparklesIcon
             className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
@@ -59,7 +59,7 @@ export function AnalysisPanel({ owner, repo }: { owner: string; repo: string }) 
       <div aria-live="polite">
         {isLoading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20">
-            <span className="h-10 w-10 animate-spin rounded-full border-2 border-muted border-t-primary" />
+            <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-neon-violet" />
             <p className="text-sm text-text-secondary">Reading the repository’s metrics…</p>
           </div>
         )}

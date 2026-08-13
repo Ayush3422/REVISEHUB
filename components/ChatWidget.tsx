@@ -68,7 +68,7 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
       <button
         onClick={() => setIsOpen(true)}
         aria-label="Open repository assistant"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:scale-105 hover:bg-primary/85"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-neon-violet text-text-primary shadow-lg shadow-neon-violet/30 transition hover:scale-105 hover:bg-neon-violet/85"
       >
         <CommentIcon className="h-6 w-6" aria-hidden="true" />
       </button>
@@ -76,17 +76,17 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end bg-background/60 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-end bg-white/[0.03] p-4 backdrop-blur-sm sm:items-center sm:justify-center">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="chat-title"
-        className="flex h-[75vh] w-full max-w-lg flex-col rounded-xl border border-muted/50 bg-surface shadow-2xl"
+        className="flex h-[75vh] w-full max-w-lg flex-col glass-strong rounded-2xl"
       >
-        <header className="flex items-center justify-between border-b border-muted/50 px-5 py-4">
+        <header className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
           <div>
-            <h2 id="chat-title" className="font-semibold text-white">
+            <h2 id="chat-title" className="font-semibold text-text-primary">
               Repository assistant
             </h2>
             <p className="font-mono text-xs text-text-secondary">
@@ -104,7 +104,7 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
 
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
           {messages.length === 0 && (
-            <div className="rounded-lg bg-background/60 p-4 text-sm text-text-secondary">
+            <div className="rounded-lg bg-white/[0.03] p-4 text-sm text-text-secondary">
               <p className="mb-2 font-medium text-text-primary">Ask about this repository.</p>
               <p>
                 The assistant can see the file listing and the README. It will tell you when a
@@ -121,8 +121,8 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
               <div
                 className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm ${
                   msg.role === 'user'
-                    ? 'bg-primary text-white'
-                    : 'border border-muted/50 bg-background/60 text-text-secondary'
+                    ? 'bg-neon-violet text-text-primary'
+                    : 'border border-white/[0.08] bg-white/[0.03] text-text-secondary'
                 }`}
               >
                 {msg.role === 'user' ? msg.content : <Markdown text={msg.content} />}
@@ -132,8 +132,8 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
 
           {isSending && (
             <div className="flex justify-start" aria-live="polite">
-              <div className="flex items-center gap-2 rounded-lg border border-muted/50 bg-background/60 px-4 py-2.5 text-sm text-text-secondary">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-primary" />
+              <div className="flex items-center gap-2 glass-card rounded-xl bg-white/[0.03] px-4 py-2.5 text-sm text-text-secondary">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-neon-violet" />
                 Thinking…
               </div>
             </div>
@@ -142,14 +142,14 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
           {error && (
             <p
               role="alert"
-              className="rounded-lg border border-red-500/40 bg-red-950/40 px-4 py-2.5 text-sm text-red-300"
+              className="rounded-xl border border-danger/35 bg-danger/10 px-4 py-2.5 text-sm text-red-300"
             >
               {error}
             </p>
           )}
         </div>
 
-        <form onSubmit={send} className="flex gap-2 border-t border-muted/50 p-4">
+        <form onSubmit={send} className="flex gap-2 border-t border-white/[0.07] p-4">
           <input
             ref={inputRef}
             value={input}
@@ -158,12 +158,12 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
             aria-label="Message"
             maxLength={2000}
             disabled={isSending}
-            className="flex-1 rounded-md border border-muted bg-background px-3 py-2 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:outline-none disabled:opacity-60"
+            className="flex-1 rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-text-primary placeholder:text-muted focus:border-neon-violet/60 focus:outline-none disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={isSending || !input.trim()}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/85 disabled:bg-muted disabled:text-text-secondary"
+            className="rounded-md bg-neon-violet px-4 py-2 text-sm font-semibold text-[#12071f] shadow-[0_0_20px_rgba(167,139,250,0.35)] transition hover:brightness-110 disabled:bg-muted disabled:text-text-secondary"
           >
             Send
           </button>

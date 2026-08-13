@@ -22,7 +22,7 @@ export default function RepoError({
       />
       <button
         onClick={reset}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/85"
+        className="rounded-lg bg-neon-violet px-4 py-2 text-sm font-semibold text-[#12071f] shadow-[0_0_20px_rgba(167,139,250,0.35)] transition hover:brightness-110"
       >
         Try again
       </button>

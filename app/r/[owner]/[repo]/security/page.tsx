@@ -41,10 +41,10 @@ export default async function SecurityPage({
   return (
     <div className="animate-fade-in space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-white">Security &amp; health</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Security &amp; health</h1>
         <p className="mt-1 text-text-secondary">
           Dependency vulnerabilities and repository checks for{' '}
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-neon-violet">
             {owner}/{repo}
           </span>
           . These run entirely from deterministic rules — no AI, and no API key.
@@ -69,7 +69,7 @@ export default async function SecurityPage({
       </div>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">
+        <h2 className="mb-3 text-xl font-semibold text-text-primary">
           Dependency vulnerabilities
           {vulnerabilities.length > 0 && (
             <span className="ml-2 text-base font-normal text-text-secondary">
@@ -79,7 +79,7 @@ export default async function SecurityPage({
         </h2>
 
         {vulnerabilities.length === 0 ? (
-          <div className="rounded-xl border border-muted/50 bg-surface/50">
+          <div className="glass rounded-2xl">
             <EmptyState
               icon={<ShieldIcon className="h-10 w-10" />}
               title={
@@ -104,7 +104,7 @@ export default async function SecurityPage({
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">
+        <h2 className="mb-3 text-xl font-semibold text-text-primary">
           Repository health
           {health.length > 0 && (
             <span className="ml-2 text-base font-normal text-text-secondary">{health.length}</span>
@@ -112,7 +112,7 @@ export default async function SecurityPage({
         </h2>
 
         {health.length === 0 ? (
-          <div className="rounded-xl border border-muted/50 bg-surface/50">
+          <div className="glass rounded-2xl">
             <EmptyState
               title="All health checks pass"
               message="This repository has CI, tests, a README, a licence, a .gitignore, and a committed lockfile."
@@ -133,7 +133,7 @@ export default async function SecurityPage({
           href="https://osv.dev"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:underline"
+          className="text-neon-violet hover:underline"
         >
           OSV.dev
         </a>

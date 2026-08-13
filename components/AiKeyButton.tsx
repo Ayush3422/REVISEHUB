@@ -45,10 +45,10 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
         onClick={() => setIsOpen(true)}
         className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${
           stored
-            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+            ? 'border-emerald-500/40 bg-emerald-500/10 text-neon-lime'
             : serverKeyConfigured
-              ? 'border-muted/50 text-text-secondary hover:border-primary hover:text-primary'
-              : 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300'
+              ? 'border-white/10 bg-white/[0.03] text-text-secondary hover:border-neon-violet/50 hover:text-neon-violet'
+              : 'border-yellow-500/40 bg-yellow-500/10 text-warning'
         }`}
       >
         <span className="block font-medium">{status}</span>
@@ -58,14 +58,14 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/75 p-4 backdrop-blur-md">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="key-title"
-            className="w-full max-w-md rounded-xl border border-muted/50 bg-surface p-6 shadow-2xl"
+            className="w-full max-w-md rounded-xl border border-white/[0.08] bg-white/[0.05] p-6 shadow-2xl"
           >
-            <h2 id="key-title" className="text-lg font-semibold text-white">
+            <h2 id="key-title" className="text-lg font-semibold text-text-primary">
               Use your own AI key
             </h2>
 
@@ -73,7 +73,7 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
               AI features run on Google Gemini. Supplying your own key means requests count against
               your quota instead of this deployment&rsquo;s.{' '}
               {!serverKeyConfigured && (
-                <span className="text-yellow-300">
+                <span className="text-warning">
                   No server key is configured, so AI features need a key from you.
                 </span>
               )}
@@ -94,7 +94,7 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
                 placeholder="AIza…"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-md border border-muted bg-background px-3 py-2 font-mono text-sm text-text-primary placeholder:text-muted focus:border-primary focus:outline-none"
+                className="w-full rounded-md border border-white/10 bg-background px-3 py-2 font-mono text-sm text-text-primary placeholder:text-muted focus:border-neon-violet/60 focus:outline-none"
               />
 
               <p className="mt-2 text-xs text-muted">
@@ -104,7 +104,7 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
                   href="https://aistudio.google.com/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-neon-violet hover:underline"
                 >
                   aistudio.google.com/apikey
                 </a>
@@ -119,7 +119,7 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
                       setAiKey(null);
                       setIsOpen(false);
                     }}
-                    className="text-sm text-red-400 transition hover:underline"
+                    className="text-sm text-danger transition hover:underline"
                   >
                     Remove stored key
                   </button>
@@ -131,14 +131,14 @@ export function AiKeyButton({ serverKeyConfigured }: { serverKeyConfigured: bool
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="rounded-lg border border-muted/60 px-3 py-2 text-sm text-text-secondary transition hover:text-text-primary"
+                    className="rounded-lg border border-white/10 px-3 py-2 text-sm text-text-secondary transition hover:text-text-primary"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!draft.trim()}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/85 disabled:bg-muted disabled:text-text-secondary"
+                    className="rounded-lg bg-neon-violet px-4 py-2 text-sm font-semibold text-[#12071f] shadow-[0_0_20px_rgba(167,139,250,0.35)] transition hover:brightness-110 disabled:bg-muted disabled:text-text-secondary"
                   >
                     Save key
                   </button>

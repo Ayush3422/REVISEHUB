@@ -30,10 +30,10 @@ export default async function FilesPage({
   return (
     <div className="flex h-full animate-fade-in flex-col">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white">File explorer</h1>
+        <h1 className="text-3xl font-bold text-text-primary">File explorer</h1>
         <p className="mt-1 text-text-secondary">
           Browse{' '}
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-neon-violet">
             {owner}/{repo}
           </span>{' '}
           and read any file.

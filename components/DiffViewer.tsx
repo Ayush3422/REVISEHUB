@@ -15,7 +15,7 @@ function FileHeader({ file }: { file: DiffFile }) {
   const tag = file.isNew ? 'added' : file.isDeleted ? 'deleted' : file.isRenamed ? 'renamed' : null;
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-muted/50 bg-surface px-4 py-2.5">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-white/[0.07] bg-white/[0.05] px-4 py-2.5">
       <code className="min-w-0 flex-1 truncate font-mono text-sm text-text-primary" title={label}>
         {label}
       </code>
@@ -24,8 +24,8 @@ function FileHeader({ file }: { file: DiffFile }) {
           {tag}
         </span>
       )}
-      <span className="font-mono text-xs tabular-nums text-emerald-400">+{file.additions}</span>
-      <span className="font-mono text-xs tabular-nums text-red-400">-{file.deletions}</span>
+      <span className="font-mono text-xs tabular-nums text-success">+{file.additions}</span>
+      <span className="font-mono text-xs tabular-nums text-danger">-{file.deletions}</span>
     </div>
   );
 }
@@ -47,7 +47,7 @@ export function DiffViewer({ diff }: { diff: string }) {
       {files.map((file) => (
         <div
           key={`${file.oldPath}->${file.newPath}`}
-          className="overflow-hidden rounded-lg border border-muted/40"
+          className="overflow-hidden glass-card rounded-xl"
         >
           <FileHeader file={file} />
 
@@ -62,17 +62,17 @@ export function DiffViewer({ diff }: { diff: string }) {
                   {file.hunks.map((hunk, hi) => (
                     <React.Fragment key={hi}>
                       <tr>
-                        <td colSpan={3} className="bg-primary/10 px-4 py-1 text-primary/80">
+                        <td colSpan={3} className="bg-neon-violet/10 px-4 py-1 text-neon-violet/80">
                           {hunk.header}
                         </td>
                       </tr>
                       {hunk.lines.map((line, li) => (
                         <tr key={`${hi}-${li}`} className={LINE_STYLES[line.type]}>
                           {/* Real line numbers, read from the hunk header. */}
-                          <td className="w-12 select-none border-r border-muted/30 px-2 text-right tabular-nums text-muted">
+                          <td className="w-12 select-none border-r border-white/[0.06] px-2 text-right tabular-nums text-muted">
                             {line.oldLine ?? ''}
                           </td>
-                          <td className="w-12 select-none border-r border-muted/30 px-2 text-right tabular-nums text-muted">
+                          <td className="w-12 select-none border-r border-white/[0.06] px-2 text-right tabular-nums text-muted">
                             {line.newLine ?? ''}
                           </td>
                           {/* The marker is rendered separately so the line's own

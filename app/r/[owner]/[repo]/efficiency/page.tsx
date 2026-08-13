@@ -27,10 +27,10 @@ export default async function EfficiencyPage({
   return (
     <div className="flex h-full animate-fade-in flex-col">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white">Code efficiency</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Code efficiency</h1>
         <p className="mt-1 text-text-secondary">
           Check a file in{' '}
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-neon-violet">
             {owner}/{repo}
           </span>{' '}
           for algorithmic inefficiency, then generate an optimized rewrite.

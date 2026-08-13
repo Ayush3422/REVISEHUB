@@ -33,9 +33,9 @@ interface OptimizeResult {
 }
 
 const GRADE_STYLE: Record<EfficiencyReport['grade'], string> = {
-  A: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+  A: 'border-emerald-500/40 bg-emerald-500/10 text-neon-lime',
   B: 'border-lime-500/40 bg-lime-500/10 text-lime-300',
-  C: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
+  C: 'border-yellow-500/40 bg-yellow-500/10 text-warning',
   D: 'border-orange-500/40 bg-orange-500/10 text-orange-300',
   F: 'border-red-500/40 bg-red-500/10 text-red-300',
 };
@@ -68,18 +68,18 @@ function CodePane({
   };
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-muted/50">
+    <div className="flex min-h-0 flex-col overflow-hidden glass-card rounded-xl">
       <div
         className={`flex items-center justify-between border-b px-3 py-2 text-xs font-semibold ${
           tone === 'after'
-            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-            : 'border-muted/50 bg-surface text-text-secondary'
+            ? 'border-emerald-500/30 bg-emerald-500/10 text-neon-lime'
+            : 'border-white/[0.08] bg-white/[0.04] text-text-secondary'
         }`}
       >
         <span>
           {title} · {lines.length} lines
         </span>
-        <button onClick={copy} className="font-normal transition hover:text-primary">
+        <button onClick={copy} className="font-normal transition hover:text-neon-violet">
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -88,7 +88,7 @@ function CodePane({
           <tbody>
             {lines.map((line, i) => (
               <tr key={i}>
-                <td className="w-10 select-none border-r border-muted/30 px-2 text-right align-top tabular-nums text-muted">
+                <td className="w-10 select-none border-r border-white/[0.06] px-2 text-right align-top tabular-nums text-muted">
                   {i + 1}
                 </td>
                 <td className="whitespace-pre-wrap break-all px-3 py-0.5 text-text-secondary">
@@ -194,15 +194,15 @@ export function EfficiencyView({
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
       {/* File picker */}
-      <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-muted/50 bg-surface/50 lg:col-span-1">
-        <div className="border-b border-muted/50 p-3">
+      <div className="flex min-h-0 flex-col overflow-hidden glass rounded-2xl lg:col-span-1">
+        <div className="border-b border-white/[0.07] p-3">
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter files…"
             aria-label="Filter files"
-            className="w-full rounded-md border border-muted/60 bg-background px-3 py-1.5 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-1.5 text-sm text-text-primary placeholder:text-muted focus:border-neon-violet/60 focus:outline-none"
           />
           <p className="mt-2 text-xs text-text-secondary">
             {files.length} analysable {files.length === 1 ? 'file' : 'files'} · JavaScript and
@@ -227,8 +227,8 @@ export function EfficiencyView({
                     title={path}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition ${
                       selected === path
-                        ? 'bg-primary/20 text-primary'
-                        : 'text-text-secondary hover:bg-surface'
+                        ? 'bg-neon-violet/15 text-neon-violet'
+                        : 'text-text-secondary hover:bg-white/[0.05]'
                     }`}
                   >
                     <FileIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
@@ -244,7 +244,7 @@ export function EfficiencyView({
       {/* Report */}
       <div className="min-h-0 space-y-4 lg:col-span-2">
         {!selected && (
-          <div className="rounded-xl border border-muted/50 bg-surface/50">
+          <div className="glass rounded-2xl">
             <EmptyState
               icon={<ZapIcon className="h-10 w-10" />}
               title="Select a file"
@@ -254,8 +254,8 @@ export function EfficiencyView({
         )}
 
         {analysing && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-muted/50 bg-surface/50 py-16">
-            <span className="h-9 w-9 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <div className="flex flex-col items-center gap-3 glass rounded-2xl py-16">
+            <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-neon-violet" />
             <p className="text-sm text-text-secondary">Parsing and checking…</p>
           </div>
         )}
@@ -264,7 +264,7 @@ export function EfficiencyView({
 
         {report && !analysing && (
           <>
-            <div className="rounded-xl border border-muted/50 bg-surface/50 p-5">
+            <div className="glass rounded-2xl p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate font-mono text-sm text-text-primary">{report.path}</p>
@@ -292,7 +292,7 @@ export function EfficiencyView({
                 <button
                   onClick={optimize}
                   disabled={optimizing}
-                  className="mt-4 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:bg-muted disabled:shadow-none"
+                  className="mt-4 flex items-center gap-2 rounded-lg bg-neon-violet px-4 py-2 text-sm font-semibold text-text-primary shadow-lg shadow-neon-violet/25 transition hover:bg-neon-violet/85 disabled:cursor-not-allowed disabled:bg-muted disabled:shadow-none"
                 >
                   <SparklesIcon
                     className={`h-4 w-4 ${optimizing ? 'animate-spin' : ''}`}
@@ -311,14 +311,14 @@ export function EfficiencyView({
                 benchmark, and "no known slow pattern" is a weaker claim than
                 "this code is fast".
               */}
-              <p className="mt-4 border-t border-muted/40 pt-3 text-xs text-muted">
+              <p className="mt-4 border-t border-white/[0.07] pt-3 text-xs text-muted">
                 Detected from the syntax tree, not measured at runtime. A clean result means no
                 known slow pattern was found, not that the code is fast.
               </p>
             </div>
 
             {report.findings.length === 0 ? (
-              <div className="rounded-xl border border-muted/50 bg-surface/50">
+              <div className="glass rounded-2xl">
                 <EmptyState
                   title="No inefficiency patterns found"
                   message="None of the quadratic-loop, linear-search, sequential-await, or copy-accumulation patterns appear in this file."
@@ -337,19 +337,19 @@ export function EfficiencyView({
         {optimizeError && <ErrorPanel title="Optimisation failed" message={optimizeError} />}
 
         {optimized && (
-          <div className="space-y-4 rounded-xl border border-primary/30 bg-surface/50 p-5">
+          <div className="glass space-y-4 rounded-2xl border-neon-violet/25 p-5 shadow-[0_0_40px_rgba(167,139,250,0.10)]">
             <div>
-              <h3 className="flex items-center gap-2 font-semibold text-white">
-                <SparklesIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+              <h3 className="flex items-center gap-2 font-semibold text-text-primary">
+                <SparklesIcon className="h-5 w-5 text-neon-violet" aria-hidden="true" />
                 Optimized version
               </h3>
               <p className="mt-2 text-sm text-text-secondary">{optimized.summary}</p>
 
               {optimized.complexityBefore && optimized.complexityAfter && (
                 <p className="mt-2 font-mono text-sm">
-                  <span className="text-red-400">{optimized.complexityBefore}</span>
+                  <span className="text-danger">{optimized.complexityBefore}</span>
                   <span className="mx-2 text-muted">→</span>
-                  <span className="text-emerald-400">{optimized.complexityAfter}</span>
+                  <span className="text-success">{optimized.complexityAfter}</span>
                 </p>
               )}
             </div>
@@ -358,19 +358,19 @@ export function EfficiencyView({
             {!optimized.behaviourPreserved && (
               <div
                 role="alert"
-                className="rounded-lg border border-yellow-500/40 bg-yellow-950/30 px-4 py-3"
+                className="rounded-lg border border-warning/35 bg-warning/10 px-4 py-3"
               >
-                <p className="text-sm font-semibold text-yellow-300">
+                <p className="text-sm font-semibold text-warning">
                   This rewrite may change behaviour
                 </p>
-                <p className="mt-1 text-sm text-yellow-200/80">
+                <p className="mt-1 text-sm text-warning/80">
                   {optimized.behaviourNotes || 'The model did not explain what differs.'}
                 </p>
               </div>
             )}
 
             {optimized.unchanged && (
-              <p className="rounded-lg border border-muted/40 bg-background/40 px-4 py-3 text-sm text-text-secondary">
+              <p className="glass-card rounded-xl bg-white/[0.03] px-4 py-3 text-sm text-text-secondary">
                 The model returned the file unchanged — it did not find a safe improvement to make.
               </p>
             )}
@@ -378,11 +378,11 @@ export function EfficiencyView({
             {optimized.changes.length > 0 && (
               <ul className="space-y-2">
                 {optimized.changes.map((change, i) => (
-                  <li key={i} className="rounded-lg border border-muted/40 bg-background/40 p-3">
+                  <li key={i} className="glass-card rounded-xl bg-white/[0.03] p-3">
                     <p className="text-sm font-medium text-text-primary">{change.what}</p>
                     <p className="mt-1 text-sm text-text-secondary">{change.why}</p>
                     {change.impact && (
-                      <p className="mt-1 font-mono text-xs text-emerald-400">{change.impact}</p>
+                      <p className="mt-1 font-mono text-xs text-success">{change.impact}</p>
                     )}
                   </li>
                 ))}

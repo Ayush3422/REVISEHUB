@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { GithubIcon } from './icons/GithubIcon';
+import { Button } from './ui/Button';
 
 const EXAMPLES = ['facebook/react', 'vercel/next.js', 'honojs/hono'];
 
@@ -57,12 +58,15 @@ export function RepoInputForm() {
         }}
         noValidate
       >
-        <label htmlFor="repo" className="mb-2 block text-sm font-medium text-text-primary">
+        <label
+          htmlFor="repo"
+          className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-muted"
+        >
           GitHub repository
         </label>
         <div className="relative">
           <GithubIcon
-            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
             aria-hidden="true"
           />
           <input
@@ -77,7 +81,7 @@ export function RepoInputForm() {
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? 'repo-error' : undefined}
             disabled={isPending}
-            className="w-full rounded-lg border border-muted/80 bg-surface py-3 pl-10 pr-4 text-text-primary placeholder:text-muted focus:border-primary focus:outline-none disabled:opacity-60"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3.5 pl-11 pr-4 font-mono text-sm text-text-primary transition-all duration-200 placeholder:text-muted hover:border-white/20 focus:border-neon-violet/60 focus:bg-white/[0.06] focus:shadow-[0_0_28px_rgba(167,139,250,0.18)] focus:outline-none disabled:opacity-60"
           />
         </div>
 
@@ -87,24 +91,13 @@ export function RepoInputForm() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="mt-5 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/85 disabled:cursor-wait disabled:bg-muted"
-        >
-          {isPending ? (
-            <>
-              <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              Opening…
-            </>
-          ) : (
-            'Analyze repository'
-          )}
-        </button>
+        <Button type="submit" size="lg" loading={isPending} className="mt-5 w-full">
+          {isPending ? 'Opening…' : 'Analyze repository'}
+        </Button>
       </form>
 
       <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-text-secondary">Try:</span>
+        <span className="text-muted">Try</span>
         {EXAMPLES.map((slug) => (
           <button
             key={slug}
@@ -114,7 +107,7 @@ export function RepoInputForm() {
               go(slug);
             }}
             disabled={isPending}
-            className="rounded-full border border-muted/60 px-3 py-1 font-mono text-xs text-text-secondary transition hover:border-primary hover:text-primary disabled:opacity-50"
+            className="press cursor-pointer rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-xs text-text-secondary hover:border-neon-cyan/50 hover:bg-neon-cyan/[0.07] hover:text-neon-cyan disabled:opacity-50"
           >
             {slug}
           </button>

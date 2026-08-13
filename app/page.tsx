@@ -1,62 +1,108 @@
 import { RepoInputForm } from '@/components/RepoInputForm';
 import { LogoIcon } from '@/components/icons/LogoIcon';
-import { CodeIcon } from '@/components/icons/CodeIcon';
+import { ShieldIcon } from '@/components/icons/ShieldIcon';
+import { ZapIcon } from '@/components/icons/ZapIcon';
 import { DashboardIcon } from '@/components/icons/DashboardIcon';
-import { LightbulbIcon } from '@/components/icons/LightbulbIcon';
-import { FolderIcon } from '@/components/icons/FolderIcon';
+import { SparklesIcon } from '@/components/icons/SparklesIcon';
 
 const FEATURES = [
   {
-    icon: CodeIcon,
-    title: 'Pull request review',
-    body: 'Line-anchored AI findings on any diff, ranked by severity.',
+    icon: ShieldIcon,
+    accent: 'text-neon-cyan',
+    glow: 'group-hover:shadow-[0_0_28px_rgba(34,211,238,0.25)]',
+    title: 'Security',
+    body: 'Leaked credentials in a diff and known CVEs in your dependencies, from the OSV database.',
+    free: true,
+  },
+  {
+    icon: ZapIcon,
+    accent: 'text-neon-lime',
+    glow: 'group-hover:shadow-[0_0_28px_rgba(163,230,53,0.22)]',
+    title: 'Efficiency',
+    body: 'Quadratic loops, linear scans, sequential awaits — graded A to F, with an optional AI rewrite.',
+    free: true,
   },
   {
     icon: DashboardIcon,
-    title: 'Project metrics',
-    body: 'Contributors, churn, and velocity from the GitHub statistics API.',
+    accent: 'text-neon-violet',
+    glow: 'group-hover:shadow-[0_0_28px_rgba(167,139,250,0.25)]',
+    title: 'Metrics',
+    body: 'Contributors, code churn and pull request velocity, straight from the GitHub statistics API.',
+    free: true,
   },
   {
-    icon: LightbulbIcon,
-    title: 'Health analysis',
-    body: 'A written assessment grounded in the repository’s real numbers.',
-  },
-  {
-    icon: FolderIcon,
-    title: 'File explorer',
-    body: 'Browse the tree and read any file without leaving the app.',
+    icon: SparklesIcon,
+    accent: 'text-neon-pink',
+    glow: 'group-hover:shadow-[0_0_28px_rgba(244,114,182,0.25)]',
+    title: 'AI review',
+    body: 'Logic errors and edge cases that no static rule can express. Optional, and it degrades gracefully.',
+    free: false,
   },
 ];
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center gap-12 px-6 py-16">
-      <div className="flex flex-col items-center text-center">
-        <div className="flex items-center gap-4">
-          <LogoIcon className="h-14 w-14 text-primary" />
-          <h1 className="text-5xl font-bold tracking-tight text-white">ReviseHub</h1>
-        </div>
-        <p className="mt-5 max-w-xl text-lg text-text-secondary">
-          Point it at a public GitHub repository to get an AI code review, real project metrics, and
-          a repository-aware assistant.
-        </p>
-      </div>
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-14 px-6 py-20">
+      <header className="animate-fade-in flex flex-col items-center text-center">
+        <span className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-text-secondary backdrop-blur-sm">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-lime opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-neon-lime" />
+          </span>
+          Works with no API key
+        </span>
 
-      <div className="w-full max-w-lg rounded-xl border border-muted/50 bg-surface/50 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <span className="relative">
+            <LogoIcon className="h-14 w-14 text-neon-violet" />
+            <span
+              aria-hidden="true"
+              className="animate-pulse-glow absolute inset-0 -z-10 rounded-full bg-neon-violet/50 blur-2xl"
+            />
+          </span>
+          <h1 className="bg-gradient-to-br from-white via-white to-neon-violet/70 bg-clip-text text-6xl font-bold tracking-tight text-transparent">
+            ReviseHub
+          </h1>
+        </div>
+
+        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary">
+          Point it at any public GitHub repository. It finds leaked secrets, vulnerable
+          dependencies, and slow code — deterministically, before any AI is involved.
+        </p>
+      </header>
+
+      <div className="animate-fade-in-up glass w-full max-w-xl rounded-3xl p-8 [animation-delay:120ms]">
         <RepoInputForm />
       </div>
 
-      <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        {FEATURES.map(({ icon: Icon, title, body }) => (
-          <li key={title} className="rounded-xl border border-muted/40 bg-surface/30 p-5">
-            <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
-            <p className="mt-3 font-semibold text-text-primary">{title}</p>
-            <p className="mt-1 text-sm text-text-secondary">{body}</p>
+      <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {FEATURES.map(({ icon: Icon, accent, glow, title, body, free }, i) => (
+          <li
+            key={title}
+            className={`glass-card press animate-fade-in-up group rounded-2xl p-5 hover:border-white/15 ${glow}`}
+            style={{ animationDelay: `${180 + i * 70}ms` }}
+          >
+            <div className="flex items-center justify-between">
+              <Icon
+                className={`h-6 w-6 ${accent} transition-transform duration-300 group-hover:scale-110`}
+                aria-hidden="true"
+              />
+              {free && (
+                <span className="rounded-full border border-neon-lime/25 bg-neon-lime/10 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-neon-lime">
+                  No key
+                </span>
+              )}
+            </div>
+            <p className="mt-4 font-semibold text-text-primary">{title}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">{body}</p>
           </li>
         ))}
       </ul>
 
-      <p className="text-xs text-muted">Powered by Google Gemini and the GitHub API.</p>
+      <footer className="flex flex-col items-center gap-2 text-xs text-muted">
+        <div className="rule-glow w-40" />
+        <p>Public repositories · GitHub API · OSV.dev · Google Gemini (optional)</p>
+      </footer>
     </main>
   );
 }

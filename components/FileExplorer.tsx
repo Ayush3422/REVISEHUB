@@ -33,7 +33,9 @@ function TreeItem({
         title={node.path}
         style={{ paddingLeft: `${depth * 0.875 + 0.5}rem` }}
         className={`flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 text-left text-sm transition-colors ${
-          isSelected ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:bg-surface'
+          isSelected
+            ? 'bg-neon-violet/15 text-neon-violet'
+            : 'text-text-secondary hover:bg-white/[0.05]'
         }`}
       >
         {isFolder ? (
@@ -43,7 +45,7 @@ function TreeItem({
             ) : (
               <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             )}
-            <FolderIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <FolderIcon className="h-4 w-4 shrink-0 text-neon-violet" aria-hidden="true" />
           </>
         ) : (
           <FileIcon className="ml-5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
@@ -127,18 +129,18 @@ export function FileExplorer({
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 md:grid-cols-3">
-      <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-muted/50 bg-surface/50 md:col-span-1">
-        <div className="border-b border-muted/50 p-3">
+      <div className="flex min-h-0 flex-col overflow-hidden glass rounded-2xl md:col-span-1">
+        <div className="border-b border-white/[0.07] p-3">
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter files…"
             aria-label="Filter files by path"
-            className="w-full rounded-md border border-muted/60 bg-background px-3 py-1.5 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-1.5 text-sm text-text-primary placeholder:text-muted focus:border-neon-violet/60 focus:outline-none"
           />
           {truncated && (
-            <p className="mt-2 text-xs text-yellow-400/90">
+            <p className="mt-2 text-xs text-warning/90">
               This repository is large; GitHub truncated the file listing.
             </p>
           )}
@@ -158,8 +160,8 @@ export function FileExplorer({
                       title={node.path}
                       className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
                         selected === node.path
-                          ? 'bg-primary/20 text-primary'
-                          : 'text-text-secondary hover:bg-surface'
+                          ? 'bg-neon-violet/15 text-neon-violet'
+                          : 'text-text-secondary hover:bg-white/[0.05]'
                       }`}
                     >
                       <FileIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
@@ -185,8 +187,8 @@ export function FileExplorer({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-muted/50 bg-surface/50 md:col-span-2">
-        <div className="flex items-center justify-between gap-3 border-b border-muted/50 px-4 py-3">
+      <div className="flex min-h-0 flex-col overflow-hidden glass rounded-2xl md:col-span-2">
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-4 py-3">
           <h2 className="min-w-0 truncate font-mono text-sm text-text-primary">
             {selected ?? 'No file selected'}
           </h2>
@@ -211,7 +213,7 @@ export function FileExplorer({
               className="flex flex-col items-center justify-center gap-3 py-20"
               aria-live="polite"
             >
-              <span className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-neon-violet" />
               <p className="text-sm text-text-secondary">Loading file…</p>
             </div>
           )}
@@ -231,7 +233,7 @@ export function FileExplorer({
                 <tbody>
                   {lines.map((line, i) => (
                     <tr key={i}>
-                      <td className="w-14 select-none border-r border-muted/30 px-3 py-0.5 text-right align-top tabular-nums text-muted">
+                      <td className="w-14 select-none border-r border-white/[0.06] px-3 py-0.5 text-right align-top tabular-nums text-muted">
                         {i + 1}
                       </td>
                       <td className="whitespace-pre-wrap break-all px-3 py-0.5 text-text-secondary">

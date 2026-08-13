@@ -22,7 +22,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
       nodes.push(
         <code
           key={key}
-          className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.85em] text-secondary"
+          className="rounded border border-white/[0.07] bg-white/[0.05] px-1.5 py-0.5 font-mono text-[0.85em] text-neon-cyan"
         >
           {part.slice(1, -1)}
         </code>,
@@ -53,7 +53,10 @@ export function Markdown({ text }: { text: string }) {
   const flushList = () => {
     if (listItems.length === 0) return;
     blocks.push(
-      <ul key={`ul-${key++}`} className="my-3 list-disc space-y-1 pl-6 text-text-secondary">
+      <ul
+        key={`ul-${key++}`}
+        className="my-3 list-disc space-y-1.5 pl-6 marker:text-neon-violet/60 text-text-secondary"
+      >
         {listItems.map((item, i) => (
           <li key={i}>{renderInline(item, `li-${key}-${i}`)}</li>
         ))}
@@ -67,7 +70,7 @@ export function Markdown({ text }: { text: string }) {
     blocks.push(
       <pre
         key={`pre-${key++}`}
-        className="my-3 overflow-x-auto rounded-lg border border-muted/50 bg-background p-4 font-mono text-sm text-text-secondary"
+        className="glass-inset my-3 overflow-x-auto rounded-xl p-4 font-mono text-sm text-text-secondary"
       >
         <code>{codeLines.join('\n')}</code>
       </pre>,
@@ -105,8 +108,8 @@ export function Markdown({ text }: { text: string }) {
       const level = (heading[1] ?? '#').length;
       const content = renderInline(heading[2] ?? '', `h-${key}`);
       const cls = [
-        'mt-6 mb-3 text-2xl font-bold text-white',
-        'mt-6 mb-3 text-xl font-bold text-white',
+        'mt-6 mb-3 text-2xl font-bold text-text-primary',
+        'mt-6 mb-3 text-xl font-bold text-text-primary',
         'mt-5 mb-2 text-lg font-semibold text-text-primary',
         'mt-4 mb-2 font-semibold text-text-primary',
       ][level - 1];

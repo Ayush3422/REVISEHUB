@@ -12,10 +12,10 @@ export default async function AnalysisPage({
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white">Project health analysis</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Project health analysis</h1>
         <p className="mt-1 text-text-secondary">
           A written assessment of{' '}
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-neon-violet">
             {owner}/{repo}
           </span>
           , grounded in its contributor, churn, and pull request metrics.

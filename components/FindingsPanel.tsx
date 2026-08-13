@@ -7,16 +7,17 @@ import { aiHeaders } from '@/lib/client/ai-key';
 import { FindingCard } from './FindingCard';
 import { EmptyState, ErrorPanel } from './ui/Panel';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { Button, SegmentedButton } from './ui/Button';
 import { ShieldIcon } from './icons/ShieldIcon';
 
 const SEVERITY_ORDER: FindingSeverity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
 const SEVERITY_CHIP: Record<FindingSeverity, string> = {
-  CRITICAL: 'bg-red-500/15 text-red-300 border-red-500/30',
-  HIGH: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  MEDIUM: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
-  LOW: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  INFO: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  CRITICAL: 'border-danger/35 bg-danger/12 text-danger',
+  HIGH: 'border-orange-400/30 bg-orange-400/12 text-orange-300',
+  MEDIUM: 'border-amber-400/30 bg-amber-400/12 text-warning',
+  LOW: 'border-emerald-400/25 bg-emerald-400/10 text-success',
+  INFO: 'border-white/12 bg-white/[0.05] text-text-secondary',
 };
 
 type Filter = 'all' | 'engine' | 'ai';
@@ -116,28 +117,25 @@ export function FindingsPanel({
   const aiCount = aiFindings?.length ?? 0;
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-xl border border-muted/50 bg-surface/50">
-      <header className="space-y-3 border-b border-muted/50 px-5 py-3">
+    <section className="glass flex h-full flex-col overflow-hidden rounded-2xl">
+      <header className="space-y-3 border-b border-white/[0.07] px-5 py-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-white">Findings</h2>
-            <p className="text-xs text-text-secondary">
+            <h2 className="font-semibold text-text-primary">Findings</h2>
+            <p className="mt-0.5 text-xs text-muted">
               {engine.scannedFiles.length} {engine.scannedFiles.length === 1 ? 'file' : 'files'}{' '}
               scanned by rules in {engine.durationMs}ms
             </p>
           </div>
 
-          <button
+          <Button
             onClick={runAi}
-            disabled={aiLoading || engineLoading}
-            className="flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:bg-muted disabled:shadow-none"
+            loading={aiLoading}
+            disabled={engineLoading}
+            icon={!aiLoading ? <SparklesIcon className="h-4 w-4" aria-hidden="true" /> : undefined}
           >
-            <SparklesIcon
-              className={`h-4 w-4 ${aiLoading ? 'animate-spin' : ''}`}
-              aria-hidden="true"
-            />
             {aiLoading ? 'Reviewing…' : aiFindings ? 'Re-run AI' : 'Add AI review'}
-          </button>
+          </Button>
         </div>
 
         {all.length > 0 && (
@@ -145,7 +143,7 @@ export function FindingsPanel({
             {SEVERITY_ORDER.filter((s) => counts[s] > 0).map((s) => (
               <span
                 key={s}
-                className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SEVERITY_CHIP[s]}`}
+                className={`rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider ${SEVERITY_CHIP[s]}`}
               >
                 {counts[s]} {s.toLowerCase()}
               </span>
@@ -154,22 +152,13 @@ export function FindingsPanel({
             {aiCount > 0 && (
               <div className="ml-auto flex gap-1">
                 {(['all', 'engine', 'ai'] as Filter[]).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    aria-pressed={filter === f}
-                    className={`rounded-md px-2 py-1 text-xs transition ${
-                      filter === f
-                        ? 'bg-primary/20 text-primary'
-                        : 'text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
+                  <SegmentedButton key={f} active={filter === f} onClick={() => setFilter(f)}>
                     {f === 'all'
                       ? `All ${all.length}`
                       : f === 'engine'
                         ? `Rules ${engineCount}`
                         : `AI ${aiCount}`}
-                  </button>
+                  </SegmentedButton>
                 ))}
               </div>
             )}
@@ -179,8 +168,8 @@ export function FindingsPanel({
 
       <div className="flex-1 space-y-4 overflow-y-auto p-5" aria-live="polite">
         {engineLoading && (
-          <div className="flex items-center gap-2 rounded-lg border border-muted/40 bg-background/40 px-4 py-2.5 text-sm text-text-secondary">
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <div className="glass-inset flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-text-secondary">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-neon-violet" />
             Re-running analysis rules…
           </div>
         )}
@@ -188,12 +177,9 @@ export function FindingsPanel({
         {engineError && (
           <div className="space-y-3">
             <ErrorPanel title="Analysis failed" message={engineError} />
-            <button
-              onClick={runEngine}
-              className="rounded-lg border border-muted/60 px-3 py-1.5 text-sm text-text-secondary transition hover:border-primary hover:text-primary"
-            >
+            <Button onClick={runEngine} variant="outline" size="sm">
               Try again
-            </button>
+            </Button>
           </div>
         )}
 
@@ -220,7 +206,7 @@ export function FindingsPanel({
 
         {/* Coverage is stated explicitly rather than implied. */}
         {(engine.skipped.length > 0 || engine.failedRules.length > 0) && (
-          <div className="rounded-lg border border-muted/40 bg-background/40 px-4 py-3 text-xs text-text-secondary">
+          <div className="glass-inset rounded-xl px-4 py-3 text-xs text-text-secondary">
             {engine.skipped.length > 0 && (
               <p>
                 <span className="font-semibold text-yellow-400/90">Not fully scanned:</span>{' '}

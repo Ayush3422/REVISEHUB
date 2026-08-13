@@ -35,10 +35,10 @@ export default async function DashboardPage({
   return (
     <div className="animate-fade-in space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Dashboard</h1>
         <p className="mt-1 text-text-secondary">
-          Metrics for <span className="font-semibold text-primary">{summary.fullName}</span>, from
-          the GitHub statistics API.
+          Metrics for <span className="font-semibold text-neon-violet">{summary.fullName}</span>,
+          from the GitHub statistics API.
         </p>
       </header>
 
@@ -50,10 +50,10 @@ export default async function DashboardPage({
       {data.statsPending && (
         <div
           role="status"
-          className="rounded-xl border border-yellow-500/40 bg-yellow-950/30 px-5 py-4 text-sm text-yellow-200"
+          className="rounded-xl border border-warning/35 bg-warning/10 px-5 py-4 text-sm text-yellow-200"
         >
           <p className="font-semibold">GitHub is still computing statistics for this repository.</p>
-          <p className="mt-1 text-yellow-200/80">
+          <p className="mt-1 text-warning/80">
             This happens the first time a repository is requested. Reload in a few seconds — the
             figures below may be incomplete until then.
           </p>

@@ -27,6 +27,10 @@ import { EmptyState, Panel } from './ui/Panel';
  *
  * Churn additionally encodes polarity by position — additions above the zero
  * line, deletions below — so the distinction survives even without colour.
+ *
+ * These stay at their validated values rather than moving to the brighter neon
+ * accents used elsewhere: the neon steps sit above the lightness band the
+ * palette validator requires for chart marks on a dark surface.
  */
 const COLORS = {
   primary: '#8B5CF6',
@@ -35,8 +39,9 @@ const COLORS = {
   deletions: '#EF4444',
 } as const;
 
-const AXIS = '#94A3B8';
-const GRID = '#334155';
+const AXIS = '#7A879E';
+/* Matches --color-border so the plot grid reads as part of the panel chrome. */
+const GRID = '#253049';
 
 function formatWeek(iso: string): string {
   const date = new Date(iso);
@@ -72,7 +77,7 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-lg border border-muted/60 bg-surface/95 px-3 py-2 shadow-xl backdrop-blur-sm">
+    <div className="glass-strong rounded-xl px-3 py-2">
       <p className="mb-1.5 text-xs font-semibold text-text-primary">{formatWeek(String(label))}</p>
       {payload.map((item, i) => (
         <p key={i} className="flex items-center gap-2 text-xs text-text-secondary">
@@ -273,7 +278,7 @@ export function ContributorChart({ data }: { data: ContributorStats[] }) {
             const c = payload[0]?.payload as ContributorStats | undefined;
             if (!c) return null;
             return (
-              <div className="rounded-lg border border-muted/60 bg-surface/95 px-3 py-2 shadow-xl backdrop-blur-sm">
+              <div className="glass-strong rounded-xl px-3 py-2">
                 <p className="text-xs font-semibold text-text-primary">{c.name}</p>
                 <p className="mt-1 text-xs text-text-secondary">
                   {c.commits.toLocaleString()} commits · +{c.additions.toLocaleString()} / −
@@ -299,7 +304,7 @@ export function ContributorTable({ data }: { data: ContributorStats[] }) {
         <table className="w-full text-sm">
           <caption className="sr-only">Commits and line changes per contributor</caption>
           <thead>
-            <tr className="border-b border-muted/40 text-left text-xs uppercase tracking-wide text-text-secondary">
+            <tr className="border-b border-white/[0.08] text-left text-[0.65rem] uppercase tracking-[0.14em] text-muted">
               <th scope="col" className="pb-2 pr-4 font-medium">
                 #
               </th>
