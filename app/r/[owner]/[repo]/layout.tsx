@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatWidget } from '@/components/ChatWidget';
+import { CommandPalette } from '@/components/CommandPalette';
 import { parseRepoInput } from '@/lib/github/client';
 import { getRepoSummary } from '@/lib/github/repo';
 import { NotFoundError, ValidationError } from '@/lib/errors';
@@ -37,6 +38,7 @@ export default async function RepoLayout({
       <Sidebar owner={owner} repo={repo} serverKeyConfigured={serverKeyConfigured()} />
       <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
       <ChatWidget owner={owner} repo={repo} />
+      <CommandPalette owner={owner} repo={repo} />
     </div>
   );
 }

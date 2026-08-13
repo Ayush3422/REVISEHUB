@@ -57,6 +57,11 @@ nulls, missing edge cases, API misuse. It is told what the engine already found 
 does not repeat it. Findings are labelled **AI** with a confidence score, and are never
 presented as equivalent to a verified rule.
 
+The assistant streams its replies token by token, and can read real source: type
+`@` in the composer to attach up to five files and it answers from their actual
+contents rather than from the listing alone. Conversations persist per
+repository for the browser session, and generation can be stopped mid-reply.
+
 It also powers the **optimizer** on the Efficiency page: given a file and the engine's
 findings, it returns a complete rewrite with a per-change explanation and the
 complexity before and after, shown side by side with the original. Preserving
@@ -109,6 +114,18 @@ precedence over the server's, so a deployed demo does not burn the owner's quota
 
 ---
 
+## Keyboard
+
+| Shortcut                  | Does                                                        |
+| ------------------------- | ----------------------------------------------------------- |
+| `Ctrl`/`Cmd` + `K`        | Command palette — jump between sections, fuzzy-search files |
+| `Ctrl`/`Cmd` + `J`        | Open or close the assistant                                 |
+| `@` in the composer       | Attach a file so the assistant reads its contents           |
+| `Enter` / `Shift`+`Enter` | Send / newline                                              |
+| `Esc`                     | Close the topmost overlay                                   |
+
+---
+
 ## Architecture
 
 ```
@@ -125,7 +142,8 @@ app/
   api/
     analysis/pull                   Engine, pull request (no key)
     analysis/efficiency             Engine, single file (no key)
-    ai/review · ai/analyze · ai/chat · ai/optimize
+    ai/review · ai/analyze · ai/chat · ai/chat/stream · ai/optimize
+    github/tree                     File paths for @-mentions and the palette
     github/file
 lib/
   analysis/

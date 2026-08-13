@@ -21,6 +21,12 @@ export interface AiProvider {
   readonly id: string;
   readonly model: string;
   generate(options: GenerateOptions): Promise<string>;
+  /**
+   * Yields text as the model produces it. Used for conversational replies,
+   * where waiting for a complete answer before showing anything makes a
+   * two-second response feel like a stall.
+   */
+  generateStream(options: GenerateOptions): AsyncIterable<string>;
 }
 
 class GeminiProvider implements AiProvider {
@@ -44,6 +50,23 @@ class GeminiProvider implements AiProvider {
       },
     });
     return response.text ?? '';
+  }
+
+  async *generateStream({
+    systemInstruction,
+    contents,
+    temperature,
+  }: GenerateOptions): AsyncIterable<string> {
+    const stream = await this.#client.models.generateContentStream({
+      model: this.model,
+      contents,
+      config: { systemInstruction, temperature: temperature ?? 0.3 },
+    });
+
+    for await (const chunk of stream) {
+      const text = chunk.text;
+      if (text) yield text;
+    }
   }
 }
 

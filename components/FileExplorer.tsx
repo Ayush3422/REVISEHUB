@@ -75,14 +75,21 @@ export function FileExplorer({
   repo,
   tree,
   truncated,
+  initialFile,
 }: {
   owner: string;
   repo: string;
   tree: TreeNode[];
   truncated: boolean;
+  /**
+   * Pre-loaded on the server when the URL carries `?path=`, so a deep link from
+   * the command palette renders the file immediately instead of selecting it
+   * and then fetching it from an effect.
+   */
+  initialFile?: FileContent | null;
 }) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [file, setFile] = useState<FileContent | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialFile?.path ?? null);
+  const [file, setFile] = useState<FileContent | null>(initialFile ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
