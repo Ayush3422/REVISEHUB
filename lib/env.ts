@@ -36,13 +36,31 @@ const schema = z.object({
 
 let cached: z.infer<typeof schema> | null = null;
 
+/**
+ * Values are trimmed, and surrounding quotes are stripped.
+ *
+ * Both are pasting accidents rather than hypotheticals: a token copied with a
+ * trailing newline produces `Bearer ghp_xxx\n`, and one pasted with the quotes
+ * from a `.env` line produces `Bearer "ghp_xxx"`. Either yields a 401 that
+ * looks exactly like an invalid token, sending you to regenerate a credential
+ * that was fine all along.
+ */
+function clean(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export function env() {
   if (cached) return cached;
 
   cached = schema.parse({
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY || undefined,
-    GEMINI_MODEL: process.env.GEMINI_MODEL || undefined,
-    GITHUB_TOKEN: process.env.GITHUB_TOKEN || undefined,
+    GEMINI_API_KEY: clean(process.env.GEMINI_API_KEY),
+    GEMINI_MODEL: clean(process.env.GEMINI_MODEL),
+    GITHUB_TOKEN: clean(process.env.GITHUB_TOKEN),
   });
 
   return cached;
