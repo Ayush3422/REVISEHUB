@@ -57,17 +57,47 @@ class GeminiProvider implements AiProvider {
     contents,
     temperature,
   }: GenerateOptions): AsyncIterable<string> {
-    const stream = await this.#client.models.generateContentStream({
-      model: this.model,
-      contents,
-      config: { systemInstruction, temperature: temperature ?? 0.3 },
-    });
+    // Retried because Gemini returns 503 "experiencing high demand" under load
+    // and explicitly says the condition is temporary. Only the initial request
+    // is retried; once tokens are flowing a restart would duplicate output.
+    const stream = await withRetry(() =>
+      this.#client.models.generateContentStream({
+        model: this.model,
+        contents,
+        config: { systemInstruction, temperature: temperature ?? 0.3 },
+      }),
+    );
 
     for await (const chunk of stream) {
       const text = chunk.text;
       if (text) yield text;
     }
   }
+}
+
+/** True for upstream conditions the provider itself describes as temporary. */
+function isTransient(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /503|UNAVAILABLE|overloaded|high demand|try again later|ECONNRESET|ETIMEDOUT/i.test(
+    message,
+  );
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isTransient(error) || attempt === attempts - 1) throw error;
+      // 400ms, then 1200ms. Short enough to stay inside the request budget.
+      await new Promise((r) => setTimeout(r, 400 * 3 ** attempt));
+    }
+  }
+
+  throw lastError;
 }
 
 /**
@@ -111,6 +141,14 @@ export function wrapProviderError(error: unknown, context: string): never {
   console.error(`[ai:${context}] ${error instanceof Error ? error.name : 'error'}`);
   const message = error instanceof Error ? error.message : '';
 
+  // Checked before the quota branch: a 503 "high demand" is the provider being
+  // busy, not the caller being out of quota, and telling the user to wait for a
+  // quota reset would send them chasing the wrong problem.
+  if (/503|UNAVAILABLE|overloaded|high demand/i.test(message)) {
+    throw new UpstreamError(
+      'The AI model is temporarily overloaded on Google’s side. This usually clears within a minute — try again, or set GEMINI_MODEL to a less busy model such as gemini-3.1-flash-lite.',
+    );
+  }
   if (/quota|RESOURCE_EXHAUSTED|rate.?limit|429/i.test(message)) {
     throw new UpstreamError(
       'The AI provider quota is exhausted. Wait for it to reset, or supply your own API key.',
@@ -128,7 +166,7 @@ export function wrapProviderError(error: unknown, context: string): never {
   // provider error, since the word appears in most of them.
   if (/NOT_FOUND|404|is no longer available|not found for API version/i.test(message)) {
     throw new UpstreamError(
-      'The configured AI model is unavailable — Google retires models and blocks older ones for newly issued keys. Set GEMINI_MODEL to `gemini-flash-latest` to track the current model.',
+      'The configured AI model is unavailable — Google retires models and blocks older ones for newly issued keys. Set GEMINI_MODEL to a current model, for example gemini-3.5-flash.',
     );
   }
   throw new UpstreamError('The AI service is unavailable right now. Please try again.');

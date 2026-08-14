@@ -4,7 +4,7 @@ import { AppError } from '@/lib/errors';
 import { parseRepoInput } from '@/lib/github/client';
 import { buildRepoContext } from '@/lib/ai/context';
 import { streamRepoAnswer } from '@/lib/ai/chat';
-import { userKeyFrom } from '@/lib/ai/provider';
+import { userKeyFrom, wrapProviderError } from '@/lib/ai/provider';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -46,7 +46,24 @@ export async function POST(request: Request) {
       history: body.history,
       question: body.question,
       userKey: userKeyFrom(request),
-    });
+    })[Symbol.asyncIterator]();
+
+    /*
+     * The first chunk is pulled here, before the response is constructed.
+     *
+     * Most provider failures — an overloaded model, a rejected key, a retired
+     * model — happen on that first call. Discovering them after the SSE headers
+     * are sent means the status is already 200 and the real reason has to be
+     * flattened into a generic "interrupted" event. Pulling one chunk first
+     * lets those cases return a proper status and the specific message from
+     * `wrapProviderError` instead.
+     */
+    let first: IteratorResult<string>;
+    try {
+      first = await iterator.next();
+    } catch (error) {
+      wrapProviderError(error, 'chat');
+    }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -58,17 +75,27 @@ export async function POST(request: Request) {
         );
 
         try {
-          for await (const chunk of iterator) {
-            controller.enqueue(encoder.encode(sse('delta', { text: chunk })));
+          if (!first.done && first.value) {
+            controller.enqueue(encoder.encode(sse('delta', { text: first.value })));
+          }
+          if (!first.done) {
+            for (;;) {
+              const next = await iterator.next();
+              if (next.done) break;
+              if (next.value)
+                controller.enqueue(encoder.encode(sse('delta', { text: next.value })));
+            }
           }
           controller.enqueue(encoder.encode(sse('done', {})));
         } catch (error) {
-          console.error('[chat:stream]', error);
-          // Mid-stream failures cannot change the status code, so they are
-          // reported as an event the client renders inline.
+          console.error('[chat:stream] mid-stream', error);
+          // Only genuinely mid-stream failures reach here, and the status is
+          // fixed at 200 by now, so this is reported as an inline event.
           controller.enqueue(
             encoder.encode(
-              sse('error', { message: 'The response was interrupted. Please try again.' }),
+              sse('error', {
+                message: 'The response was cut short. Whatever arrived above is kept — try again.',
+              }),
             ),
           );
         } finally {

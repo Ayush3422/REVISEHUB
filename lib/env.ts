@@ -17,13 +17,16 @@ import { AppError } from '@/lib/errors';
 const schema = z.object({
   GEMINI_API_KEY: z.string().min(1).optional(),
   /**
-   * A moving alias by default, not a pinned version. This project has already
-   * been broken twice by model retirement (gemini-1.5-flash, then
-   * gemini-2.5-flash, which Google now blocks for newly issued keys). The
-   * alias tracks the current Flash model, so the app keeps working.
-   * Pin an explicit version here if you need reproducible output.
+   * Pinned, deliberately.
+   *
+   * `gemini-flash-latest` looks like the safer choice — it survives model
+   * retirements, which have broken this project twice. In practice the alias
+   * resolves to Google's default model, which is also the most contended: it
+   * measured 503 after 65 seconds while pinned versions answered in 1.4s.
+   * A pin that might be retired in a year beats an alias that is unusable
+   * today, and `wrapProviderError` names the fix if this one is ever retired.
    */
-  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   /**
    * Optional. Without it the GitHub API allows 60 requests/hour per IP, which
    * is not enough to load a dashboard. With a token it is 5,000/hour.
