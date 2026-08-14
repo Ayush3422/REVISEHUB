@@ -114,6 +114,38 @@ precedence over the server's, so a deployed demo does not burn the owner's quota
 
 ---
 
+## Deploying
+
+Vercel's Hobby plan is free and covers this app. Non-commercial use only, which
+a student project satisfies.
+
+1. Import the repository at <https://vercel.com/new>. Next.js is detected
+   automatically — no build settings to change.
+2. Add the environment variables in **Settings → Environment Variables**, for
+   Production, Preview and Development:
+
+   | Variable         | Value                                                      |
+   | ---------------- | ---------------------------------------------------------- |
+   | `GITHUB_TOKEN`   | A fine-grained token with public repository read access    |
+   | `GEMINI_API_KEY` | Optional — everything except the AI layer works without it |
+   | `GEMINI_MODEL`   | Optional, defaults to `gemini-3.5-flash`                   |
+
+3. Redeploy after adding them. Variables are read at request time, so the first
+   build succeeds without any of them set — the app simply runs with the engine
+   only until they are added.
+
+The longest function is the AI optimizer at 90s, well inside Hobby's 300s
+ceiling.
+
+**One caveat for a public deployment:** rate limiting is in-process and resets
+on redeploy, and each serverless instance keeps its own counter. It stops one
+tab looping an expensive call; it is not a shared limiter. Anyone can spend the
+deployment's Gemini quota unless they supply their own key with the key button,
+so consider leaving `GEMINI_API_KEY` unset on a public instance and letting
+visitors bring their own.
+
+---
+
 ## Keyboard
 
 | Shortcut                  | Does                                                        |
