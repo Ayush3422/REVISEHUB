@@ -242,17 +242,25 @@ export function ChatWidget({ owner, repo }: { owner: string; repo: string }) {
         }
       }
 
-      if (partialRef.current) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: partialRef.current }]);
-      }
+      /*
+       * The accumulated text is snapshotted into a local before it reaches
+       * setMessages.
+       *
+       * Reading `partialRef.current` *inside* the updater looks equivalent but
+       * is not: React invokes the updater during the render phase, which
+       * happens after the `finally` below has already reset the ref. The guard
+       * passed, the message was appended, and its content was the empty string
+       * — a reply that streamed correctly but rendered as a blank bubble.
+       */
+      const answer = partialRef.current;
+      if (answer) setMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
       setAttachments([]);
     } catch (err) {
       // Aborting is the user pressing Stop, not a failure — whatever arrived
       // before the abort is kept rather than thrown away.
+      const salvaged = partialRef.current;
       if (err instanceof DOMException && err.name === 'AbortError') {
-        if (partialRef.current) {
-          setMessages((prev) => [...prev, { role: 'assistant', content: partialRef.current }]);
-        }
+        if (salvaged) setMessages((prev) => [...prev, { role: 'assistant', content: salvaged }]);
       } else {
         setError(err instanceof Error ? err.message : 'The assistant could not answer.');
       }

@@ -25,13 +25,17 @@ export function loadConversation(owner: string, repo: string): ChatMessage[] {
     if (!Array.isArray(parsed)) return [];
 
     // Storage is user-writable, so the shape is checked rather than trusted.
+    // Empty messages are dropped too: they carry nothing, render as a blank
+    // bubble, and would be replayed as history on the next question. Filtering
+    // here also clears any that an earlier bug already wrote.
     return parsed.filter(
       (m): m is ChatMessage =>
         !!m &&
         typeof m === 'object' &&
         (m as ChatMessage).role !== undefined &&
         ['user', 'assistant'].includes((m as ChatMessage).role) &&
-        typeof (m as ChatMessage).content === 'string',
+        typeof (m as ChatMessage).content === 'string' &&
+        (m as ChatMessage).content.trim().length > 0,
     );
   } catch {
     return [];
