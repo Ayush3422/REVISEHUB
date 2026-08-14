@@ -1,27 +1,41 @@
+<div align="center">
+
 # ReviseHub
 
-Code review for public GitHub repositories. It finds problems in pull requests,
-dependencies, and repository structure — and **works with no API key at all**.
+**Code review for any public GitHub repository — that works with no API key at all.**
 
-Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Recharts, and an optional
-Google Gemini layer.
+Finds leaked credentials, vulnerable dependencies, and O(n²) loops using deterministic
+rules. AI is a second, optional layer for what rules genuinely cannot express.
+
+[**Live demo →**](https://revisehub-beryl.vercel.app)
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Tests](https://img.shields.io/badge/tests-68%20passing-34D399)](#testing)
+[![License](https://img.shields.io/badge/license-MIT-A78BFA)](LICENSE)
+
+</div>
+
+<!--
+  SCREENSHOTS — add these for a much stronger first impression.
+  Create a `docs/` folder, drop the images in, then delete this comment block.
+
+  |  |  |
+  | :--: | :--: |
+  | ![Security](docs/security.png) | ![Efficiency](docs/efficiency.png) |
+  | Dependency CVEs and repository health | Efficiency grading with an AI rewrite |
+-->
 
 ---
 
-## ⚠️ If you ran an earlier version of this project, rotate your keys
+## The problem
 
-Before this rewrite, `GEMINI_API_KEY` and `VITE_GITHUB_TOKEN` were compiled into the
-browser bundle, so anyone who loaded the site could read them from DevTools. If that
-version was ever deployed or shared:
+Most "AI code review" tools stop working the moment the API key fails — rate limits,
+quota exhaustion, a retired model. The analysis and the language model are the same
+component, so when one breaks, everything breaks.
 
-1. Revoke and regenerate your Gemini key at <https://aistudio.google.com/apikey>
-2. Revoke and regenerate your GitHub token at <https://github.com/settings/tokens>
-
-Both are now server-side only and are never sent to the browser.
-
----
-
-## Two engines, one of which needs no key
+ReviseHub separates them.
 
 ```
                 ┌─> Analysis engine  (deterministic, no key)  ─┐
@@ -32,129 +46,79 @@ GitHub data ────┤                                              ├─�
 The engine always runs. The AI layer enhances it when a key is available, and steps
 aside when it is not.
 
-### The engine — deterministic rules, no key
+---
 
-Same input, same output, every time. Findings are labelled **Verified rule** in the UI.
+## What the engine finds
 
-| Rule group       | Finds                                                                                                                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Secrets**      | AWS, Google, GitHub, Slack, Stripe, OpenAI, Anthropic keys, JWTs, private keys, and database URLs with passwords, added in a diff. The matched value is always redacted.                                                       |
-| **Dependencies** | Known CVEs in `package.json` via [OSV.dev](https://osv.dev) — real advisory IDs, severity, and fixed versions. Dev dependencies are ranked lower than runtime ones.                                                            |
-| **Hygiene**      | `console.log`/`debugger` left in, `.env` or key files committed, merge conflict markers, TODO markers, oversized changes, source changed without tests.                                                                        |
-| **Complexity**   | Cyclomatic complexity, function length, nesting depth, parameter count — from the syntax tree of changed JS/TS files. Test, generated, and vendored files are excluded.                                                        |
-| **Efficiency**   | Nested loops, a linear scan inside a loop, `await` in a loop, spread accumulation, sorting or building a regex in a loop, `shift`/`unshift` in a loop, `JSON.parse(JSON.stringify())` cloning. Scored 0–100 with an A–F grade. |
-| **Repo health**  | Missing CI, tests, README, licence, `.gitignore`, or lockfile.                                                                                                                                                                 |
+No API key. Same input, same output, every time. Labelled **Verified rule** in the UI.
 
-**Efficiency is detection, not measurement.** Nothing is benchmarked, because
-benchmarking would mean executing code from an arbitrary repository on the server —
-see [Safety of the analysis engine](#safety-of-the-analysis-engine). A clean report
-means no known slow pattern was found, not that the code is fast.
+| Rule group       | Finds                                                                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Secrets**      | AWS, Google, GitHub, Slack, Stripe, OpenAI and Anthropic keys, JWTs, private keys, and database URLs with passwords — added in a diff. The matched value is always redacted.                      |
+| **Dependencies** | Known CVEs in `package.json` via [OSV.dev](https://osv.dev) — real advisory IDs, severity, and the version that fixes it. Dev dependencies rank below runtime ones.                               |
+| **Efficiency**   | Nested loops, a linear scan inside a loop, `await` in a loop, spread accumulation, sorting or building a regex in a loop, `JSON.parse(JSON.stringify())` cloning. Scored 0–100 with an A–F grade. |
+| **Complexity**   | Cyclomatic complexity, function length, nesting depth, parameter count — from the syntax tree of changed files.                                                                                   |
+| **Hygiene**      | `console.log`/`debugger` left in, `.env` or key files committed, merge conflict markers, oversized changes, source changed without tests.                                                         |
+| **Repo health**  | Missing CI, tests, README, licence, `.gitignore`, or lockfile.                                                                                                                                    |
 
-### The AI layer — optional
+## What the AI layer adds
 
-Scoped to what rules cannot express: logic errors, inverted conditions, unhandled
-nulls, missing edge cases, API misuse. It is told what the engine already found so it
-does not repeat it. Findings are labelled **AI** with a confidence score, and are never
-presented as equivalent to a verified rule.
+Optional. Scoped to what rules cannot express, and clearly separated from them.
 
-The assistant streams its replies token by token, and can read real source: type
-`@` in the composer to attach up to five files and it answers from their actual
-contents rather than from the listing alone. Conversations persist per
-repository for the browser session, and generation can be stopped mid-reply.
+- **Logic review** — off-by-one errors, inverted conditions, unhandled nulls, missing
+  edge cases. It is told what the engine already found so it does not repeat it.
+- **Code optimisation** — rewrites a slow file and explains each change, with
+  preserving observable behaviour as a hard requirement.
+- **A repository assistant** — streams replies, and reads real source: type `@` to
+  attach up to five files and it answers from their contents, not from filenames.
 
-It also powers the **optimizer** on the Efficiency page: given a file and the engine's
-findings, it returns a complete rewrite with a per-change explanation and the
-complexity before and after, shown side by side with the original. Preserving
-observable behaviour is a hard requirement — where a speed-up would change behaviour,
-the rewrite must declare it, and the UI surfaces that as a warning.
+Findings are labelled **AI** with a confidence score. A rule that matched is a fact; a
+model's opinion is not, and the interface never presents them as equivalent.
 
 ---
 
-## Getting started
+## Quick start
 
 **Prerequisites:** Node.js 20.9 or newer.
 
 ```bash
+git clone https://github.com/Ayush3422/REVISEHUB.git
+cd REVISEHUB
 npm install
-```
-
-```bash
 cp .env.example .env.local
-```
-
-| Variable         | Required             | Purpose                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GITHUB_TOKEN`   | Strongly recommended | Raises the GitHub API limit from 60 requests/hour to 5,000. A fine-grained token with public repository read access is enough.                                                                                                                                                                                                                                             |
-| `GEMINI_API_KEY` | Only for AI features | [Get one here](https://aistudio.google.com/apikey). Without it, everything except the AI layer still works.                                                                                                                                                                                                                                                                |
-| `GEMINI_MODEL`   | No                   | Defaults to `gemini-3.5-flash`. Deliberately pinned rather than the `gemini-flash-latest` alias: that alias resolves to Google's default model, which is the most contended — measured returning 503 after 65s while pinned versions answered in ~1.4s. If it is ever retired, the error message names the fix. Alternatives: `gemini-3.6-flash`, `gemini-3.1-flash-lite`. |
-
-```bash
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3000>. **It works immediately with an empty `.env.local`** —
+just at GitHub's 60 requests/hour anonymous limit.
+
+| Variable         | Required         | Purpose                                                                                                           |
+| ---------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`   | Recommended      | Raises the GitHub limit from 60/hour to 5,000. A fine-grained token with public repository read access is enough. |
+| `GEMINI_API_KEY` | AI features only | [Get one free](https://aistudio.google.com/apikey). Everything else works without it.                             |
+| `GEMINI_MODEL`   | No               | Defaults to `gemini-3.5-flash`.                                                                                   |
 
 ### Bring your own key
 
-Visitors can supply their own Gemini key from the sidebar. It is held in
-`sessionStorage`, cleared when the tab closes, sent as a request header to this app's
-own API routes, and never persisted or logged server-side. A user-supplied key takes
-precedence over the server's, so a deployed demo does not burn the owner's quota.
+Visitors can supply their own Gemini key from the sidebar. It lives in `sessionStorage`,
+is cleared when the tab closes, and is never persisted or logged server-side. A
+user-supplied key takes precedence, so a public demo does not spend the owner's quota.
 
 ### Scripts
 
-| Command                       | Does                              |
-| ----------------------------- | --------------------------------- |
-| `npm run dev`                 | Development server                |
-| `npm run build` / `npm start` | Production build and serve        |
-| `npm run typecheck`           | `tsc --noEmit`                    |
-| `npm run lint`                | ESLint                            |
-| `npm test`                    | Vitest                            |
-| `npm run verify`              | All four, in order — what CI runs |
+| Command                       | Does                                             |
+| ----------------------------- | ------------------------------------------------ |
+| `npm run dev`                 | Development server                               |
+| `npm run build` / `npm start` | Production build and serve                       |
+| `npm run verify`              | Typecheck, lint, test, build — what CI would run |
 
----
+### Keyboard
 
-## Deploying
-
-Vercel's Hobby plan is free and covers this app. Non-commercial use only, which
-a student project satisfies.
-
-1. Import the repository at <https://vercel.com/new>. Next.js is detected
-   automatically — no build settings to change.
-2. Add the environment variables in **Settings → Environment Variables**, for
-   Production, Preview and Development:
-
-   | Variable         | Value                                                      |
-   | ---------------- | ---------------------------------------------------------- |
-   | `GITHUB_TOKEN`   | A fine-grained token with public repository read access    |
-   | `GEMINI_API_KEY` | Optional — everything except the AI layer works without it |
-   | `GEMINI_MODEL`   | Optional, defaults to `gemini-3.5-flash`                   |
-
-3. Redeploy after adding them. Variables are read at request time, so the first
-   build succeeds without any of them set — the app simply runs with the engine
-   only until they are added.
-
-The longest function is the AI optimizer at 90s, well inside Hobby's 300s
-ceiling.
-
-**One caveat for a public deployment:** rate limiting is in-process and resets
-on redeploy, and each serverless instance keeps its own counter. It stops one
-tab looping an expensive call; it is not a shared limiter. Anyone can spend the
-deployment's Gemini quota unless they supply their own key with the key button,
-so consider leaving `GEMINI_API_KEY` unset on a public instance and letting
-visitors bring their own.
-
----
-
-## Keyboard
-
-| Shortcut                  | Does                                                        |
-| ------------------------- | ----------------------------------------------------------- |
-| `Ctrl`/`Cmd` + `K`        | Command palette — jump between sections, fuzzy-search files |
-| `Ctrl`/`Cmd` + `J`        | Open or close the assistant                                 |
-| `@` in the composer       | Attach a file so the assistant reads its contents           |
-| `Enter` / `Shift`+`Enter` | Send / newline                                              |
-| `Esc`                     | Close the topmost overlay                                   |
+| Shortcut                                      | Does                                                        |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> | Command palette — jump between sections, fuzzy-search files |
+| <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>J</kbd> | Open the assistant                                          |
+| `@` in the composer                           | Attach a file so the assistant reads its contents           |
 
 ---
 
@@ -162,95 +126,117 @@ visitors bring their own.
 
 ```
 app/
-  page.tsx                          Landing page and repository input
+  page.tsx                      Landing page and repository input
   r/[owner]/[repo]/
-    pulls/                          Pull request list
-    pulls/[number]/                 Diff viewer + findings panel
-    efficiency/                     Efficiency grade + AI optimizer
-    security/                       Dependency CVEs + repo health
-    dashboard/                      Contributor, churn, velocity charts
-    analysis/                       AI project assessment
-    files/                          File tree and viewer
+    pulls/  pulls/[number]/     Pull request list · diff viewer + findings
+    efficiency/                 Efficiency grade + AI optimizer
+    security/                   Dependency CVEs + repository health
+    dashboard/                  Contributor, churn and velocity charts
+    analysis/  files/           AI assessment · file tree and viewer
   api/
-    analysis/pull                   Engine, pull request (no key)
-    analysis/efficiency             Engine, single file (no key)
-    ai/review · ai/analyze · ai/chat · ai/chat/stream · ai/optimize
-    github/tree                     File paths for @-mentions and the palette
-    github/file
+    analysis/*                  Deterministic engine (no key)
+    ai/*                        Review · analyse · chat · stream · optimize
+    github/*                    File contents and tree
 lib/
   analysis/
-    types.ts                        Finding schema, shared by both engines
-    engine.ts                       Rule orchestration
-    rules/                          secrets · hygiene · complexity · efficiency ·
-                                    dependencies · repo-health
-  ai/provider.ts                    Provider interface + Gemini implementation
-  ai/optimize.ts                    Behaviour-preserving rewrite of a slow file
-  github/                           GitHub API client and data layer
-  diff.ts                           Unified diff parser
-tests/                              Vitest suites for the parser and rules
+    types.ts                    Finding schema, shared by both engines
+    engine.ts                   Rule orchestration
+    rules/                      secrets · dependencies · efficiency ·
+                                complexity · hygiene · repo-health
+  ai/provider.ts                Provider interface + Gemini implementation
+  github/                       GitHub API client and data layer
+  diff.ts                       Unified diff parser
+tests/                          Vitest suites for the parser and rules
 ```
 
 ### Where secrets live
 
-`lib/env.ts`, `lib/github/`, `lib/ai/`, and the dependency rule all import the
-`server-only` package. If any is ever imported from a Client Component, the build fails
-rather than shipping a key to the browser.
+`lib/env.ts`, `lib/github/`, and `lib/ai/` all import the `server-only` package. If any
+is ever imported from a Client Component, **the build fails** rather than shipping a key
+to the browser. No secret uses the `NEXT_PUBLIC_` prefix, because that prefix is exactly
+what inlines a value into client JavaScript.
 
-<a id="safety-of-the-analysis-engine"></a>
+### The analysis engine never executes your code
 
-### Safety of the analysis engine
+Parsing uses `ts.createSourceFile`, which builds a syntax tree and nothing more. No
+module from the target repository is loaded, and none of its configuration is read.
 
-Complexity and efficiency analysis use `ts.createSourceFile`, which parses text into an AST and
-nothing more. **No code from the target repository is executed, and none of its
-configuration is loaded.** This is deliberate: running a repository's own ESLint or
-build config would mean executing arbitrary code from a stranger's repository on the
-server.
+This is deliberate. Running a repository's own ESLint or build config would mean
+executing arbitrary code from a stranger's repository on the server. It is also why
+efficiency is **detected, not measured** — benchmarking would require running the code.
+A clean report means "no known slow pattern was found", not "this code is fast", and the
+interface says so.
 
 ### GitHub request budget
 
 The dashboard is built from GitHub's precomputed `/stats/*` endpoints — three requests
-regardless of repository size. The pull request list is one request. Those endpoints
-return `202` with an empty body while GitHub warms its cache; the app says so rather
+regardless of repository size. The pull request list is one. Those endpoints return
+`202` with an empty body while GitHub warms its cache; the app reports that state rather
 than rendering zeroes as though they were measurements.
 
 ---
 
-## Cost
+## Engineering decisions
 
-| Piece                          | Cost                             |
-| ------------------------------ | -------------------------------- |
-| Vercel Hobby hosting           | Free (non-commercial use)        |
-| GitHub API                     | Free                             |
-| OSV.dev vulnerability database | Free, no account                 |
-| The whole analysis engine      | Free, no key                     |
-| Gemini                         | Free tier, and entirely optional |
+Three problems found while building this, and what they changed.
+
+**A secret scanner that returns "clean" is worse than none.** The scanner initially only
+knew Google's classic `AIza…` key format. Google also issues keys shaped `AQ.…`, and
+those passed straight through. Not a false positive anyone would notice — a clean result
+that reads as an all-clear. Fixed, with regression tests for both formats.
+
+**A noisy analyser gets switched off.** The efficiency rules graded a well-written
+open-source file **F/0** — but three of five findings were `path.indexOf('/')`, a
+fixed-substring search on a short string, not the quadratic collection lookup the rule
+exists for. Restricting it to non-literal arguments on non-string receivers moved the
+same file to **C/60** with only the genuine issues.
+
+**Colour must be measured, not eyeballed.** Every foreground token was checked against
+the _composited_ glass surface — white at 6% over `#0A0F1E` renders as `#191D2C` — not
+the page background, because glass lightens what sits under it and a ratio taken on the
+raw background overstates the real one. That moved `muted` from the conventional
+`#64748B`, which fell to 3.5:1 and would have failed AA for body text, to `#7A879E` at
+4.6:1.
+
+---
+
+## Testing
+
+```bash
+npm run verify
+```
+
+68 tests across the diff parser and every rule group, including deliberate
+false-positive controls — a rule that fires on the wrong thing is tested for as
+carefully as one that fires on the right thing.
 
 ---
 
 ## Current limitations
 
-- **Public repositories only.** There is no sign-in.
-- **Nothing is persisted.** Findings are computed per request; chat history is lost on
-  refresh.
-- **Complexity analysis covers JavaScript and TypeScript.** Other languages still get
-  secrets, hygiene, dependency, and repo-health rules.
-- **Dependency scanning covers npm**, and reads versions from `package.json`, so the
-  version actually installed may differ from the one checked.
-- **The chat assistant sees the file listing and README, not file contents.** It is
-  prompted to say so rather than guess.
-- **AI reviews are diff-only**, capped at ~80,000 characters. Skipped files are listed
-  rather than silently dropped.
-- **Rate limiting is per server instance** and resets on redeploy.
+Stated plainly rather than discovered later:
 
----
+- **Public repositories only.** There is no sign-in.
+- **Nothing is persisted.** Findings are computed per request; chat history lives in
+  `sessionStorage` for the browser session.
+- **AST analysis covers JavaScript and TypeScript.** Other languages still get secret
+  detection, dependency scanning, diff hygiene, and repository health.
+- **Dependency scanning supports npm.** Other ecosystems are not read yet.
+- **Rate limiting is per server instance** and resets on redeploy. It stops one client
+  looping an expensive call; it is not a shared limiter.
+- **The AI can be wrong.** Its findings are a starting point for review, not a verdict —
+  which is why they are labelled separately from the engine's.
 
 ## Roadmap
 
 1. **Persistence and accounts** — Postgres, GitHub OAuth, saved and shareable reviews.
-2. **More rules** — tree-sitter grammars for Python, Go, and Java; SQL injection and
-   unsafe-eval patterns; licence compatibility.
-3. **Agentic AI review** — tool use so the model can read files on demand instead of
-   working from the diff alone.
-4. **Automation** — webhooks to review new pull requests and post findings back to
-   GitHub as a status check.
-5. **Applicable fixes** — turn a suggested patch into a real pull request.
+2. **Webhooks** — review every new pull request automatically and post a status check.
+3. **More ecosystems** — PyPI, Go modules, Maven for dependency scanning.
+4. **Repository-aware chat** — embeddings so the assistant can answer from any file
+   without being handed one.
+
+---
+
+## License
+
+[MIT](LICENSE)
